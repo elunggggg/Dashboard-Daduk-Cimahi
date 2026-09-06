@@ -61,6 +61,12 @@ return [
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
             ]) : [],
+            // Dipakai spatie/laravel-backup. Di Windows/Laragon, mysqldump biasanya
+            // tidak ada di PATH milik proses PHP, jadi lokasinya disebut eksplisit
+            // lewat DB_DUMP_BINARY_PATH di .env (kosong = andalkan PATH).
+            'dump' => array_filter([
+                'dump_binary_path' => env('DB_DUMP_BINARY_PATH'),
+            ]),
         ],
 
         'pgsql' => [

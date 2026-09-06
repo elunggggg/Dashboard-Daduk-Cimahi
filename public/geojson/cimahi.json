@@ -1,0 +1,89 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "cimahi-utara",
+        "name": "Cimahi Utara",
+        "type": "Kecamatan",
+        "luas_km2": 13.5,
+        "kelurahan": ["Cibabat", "Cipageran", "Citeureup", "Pasirkaliki"]
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [107.508, -6.843],
+          [107.530, -6.840],
+          [107.548, -6.841],
+          [107.562, -6.845],
+          [107.568, -6.855],
+          [107.566, -6.867],
+          [107.558, -6.876],
+          [107.542, -6.879],
+          [107.525, -6.877],
+          [107.512, -6.874],
+          [107.504, -6.864],
+          [107.503, -6.852],
+          [107.508, -6.843]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "cimahi-tengah",
+        "name": "Cimahi Tengah",
+        "type": "Kecamatan",
+        "luas_km2": 10.4,
+        "kelurahan": ["Baros", "Cigugur Tengah", "Cimahi", "Karangmekar", "Padasuka", "Setiamanah"]
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [107.512, -6.874],
+          [107.525, -6.877],
+          [107.542, -6.879],
+          [107.558, -6.876],
+          [107.565, -6.885],
+          [107.563, -6.897],
+          [107.554, -6.906],
+          [107.538, -6.909],
+          [107.520, -6.908],
+          [107.509, -6.901],
+          [107.506, -6.889],
+          [107.508, -6.880],
+          [107.512, -6.874]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "cimahi-selatan",
+        "name": "Cimahi Selatan",
+        "type": "Kecamatan",
+        "luas_km2": 16.4,
+        "kelurahan": ["Cibeber", "Cibeureum", "Leuwigajah", "Melong", "Utama"]
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [107.520, -6.908],
+          [107.538, -6.909],
+          [107.554, -6.906],
+          [107.563, -6.897],
+          [107.568, -6.912],
+          [107.564, -6.924],
+          [107.552, -6.932],
+          [107.535, -6.936],
+          [107.518, -6.933],
+          [107.506, -6.924],
+          [107.504, -6.913],
+          [107.508, -6.907],
+          [107.520, -6.908]
+        ]]
+      }
+    }
+  ]
+}

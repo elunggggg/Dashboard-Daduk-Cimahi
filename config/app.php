@@ -1,5 +1,9 @@
 <?php
 
+use App\Providers\AppServiceProvider;
+use App\Providers\AuthServiceProvider;
+use App\Providers\EventServiceProvider;
+use App\Providers\RouteServiceProvider;
 use Illuminate\Support\Facades\Facade;
 use Illuminate\Support\ServiceProvider;
 
@@ -70,7 +74,13 @@ return [
     |
     */
 
-    'timezone' => 'UTC',
+    /*
+     * Waktu Indonesia Barat. Ini bukan sekadar soal tampilan: MySQL di server
+     * ini memakai waktu lokal (WIB) sedangkan Laravel semula UTC, jadi
+     * created_at yang ditulis Eloquent tertinggal 7 jam dari NOW() milik
+     * database. Riwayat import dan audit log jadi tampak terjadi di masa lalu.
+     */
+    'timezone' => env('APP_TIMEZONE', 'Asia/Jakarta'),
 
     /*
     |--------------------------------------------------------------------------
@@ -83,7 +93,8 @@ return [
     |
     */
 
-    'locale' => 'en',
+    // Nama bulan & hari pada translatedFormat() ikut locale ini → "30 Jul 2026"
+    'locale' => env('APP_LOCALE', 'id'),
 
     /*
     |--------------------------------------------------------------------------
@@ -163,11 +174,11 @@ return [
         /*
          * Application Service Providers...
          */
-        App\Providers\AppServiceProvider::class,
-        App\Providers\AuthServiceProvider::class,
+        AppServiceProvider::class,
+        AuthServiceProvider::class,
         // App\Providers\BroadcastServiceProvider::class,
-        App\Providers\EventServiceProvider::class,
-        App\Providers\RouteServiceProvider::class,
+        EventServiceProvider::class,
+        RouteServiceProvider::class,
     ])->toArray(),
 
     /*

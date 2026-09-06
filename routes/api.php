@@ -1,7 +1,12 @@
 <?php
 
+use App\Http\Controllers\Api\DashboardDataController;
+use App\Http\Controllers\Api\KategoriPublikController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+
+Route::get('/dashboard', DashboardDataController::class)->name('api.dashboard');
+Route::get('/dashboard-publik/kategori', KategoriPublikController::class)->name('api.dashboard-publik.kategori');
 
 /*
 |--------------------------------------------------------------------------

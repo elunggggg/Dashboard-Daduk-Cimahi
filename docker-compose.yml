@@ -1,0 +1,59 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: daduk-app
+    restart: unless-stopped
+    ports:
+      - "${APP_PORT:-8080}:80"
+    environment:
+      APP_ENV: ${APP_ENV:-production}
+      APP_DEBUG: ${APP_DEBUG:-false}
+      APP_URL: ${APP_URL:-http://localhost:8080}
+      APP_TIMEZONE: Asia/Jakarta
+      APP_LOCALE: id
+      DB_CONNECTION: mysql
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_DATABASE: ${DB_DATABASE:-daduk_cimahi}
+      DB_USERNAME: ${DB_USERNAME:-daduk}
+      DB_PASSWORD: ${DB_PASSWORD:-daduk_secret}
+      SESSION_DRIVER: file
+      DB_DUMP_BINARY_PATH: /usr/bin
+    volumes:
+      - storage_data:/var/www/html/storage
+      - backup_data:/var/www/html/storage/app/Laravel
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - daduk
+
+  db:
+    image: mysql:8.0
+    container_name: daduk-db
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE:-daduk_cimahi}
+      MYSQL_USER: ${DB_USERNAME:-daduk}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-daduk_secret}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-daduk_root_secret}
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - daduk
+
+networks:
+  daduk:
+    driver: bridge
+
+volumes:
+  db_data:
+  storage_data:
+  backup_data:
