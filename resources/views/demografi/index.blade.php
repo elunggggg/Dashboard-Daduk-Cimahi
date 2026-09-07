@@ -1,7 +1,7 @@
 <x-layouts.public title="Demografi">
 
     {{-- Hero --}}
-    <div class="bg-brand-900 text-white py-8 px-4 sm:px-6 lg:px-8">
+    <div class="bg-gradient-to-r from-brand-900 to-brand-700 text-white py-8 px-4 sm:px-6 lg:px-8">
         <div class="max-w-7xl mx-auto">
             <div class="flex items-center gap-3 mb-2">
                 <a href="{{ route('dashboard.publik') }}" class="text-white/60 hover:text-white text-sm">Dashboard

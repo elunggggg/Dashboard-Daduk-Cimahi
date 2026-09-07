@@ -6,6 +6,12 @@
     {{-- Hero strip --}}
     <div class="bg-gradient-to-r from-brand-900 to-brand-700 text-white py-8 px-4 sm:px-6 lg:px-8">
         <div class="max-w-7xl mx-auto">
+            <div class="flex items-center gap-3 mb-2">
+                <a href="{{ route('dashboard.publik') }}" class="text-white/60 hover:text-white text-sm">Dashboard
+                    Publik</a>
+                <span class="text-white/40">/</span>
+                <span class="text-white text-sm font-medium">Peta Wilayah</span>
+            </div>
             <h1 class="text-2xl font-extrabold tracking-tight mb-1">Peta Wilayah</h1>
             <p class="text-brand-200 text-sm">
                 Distribusi penduduk per kelurahan — Periode: {{ $latestWaktu?->label ?? 'belum ada data' }}

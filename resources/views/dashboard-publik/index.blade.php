@@ -103,12 +103,8 @@
                             <i class="bi bi-download"></i> Unduh
                         </button>
 
-                        <a href="{{ route('ekspor.profil') }}" class="btn-secondary text-xs py-1.5 px-3">
-                            <i class="bi bi-file-earmark-pdf"></i> Buku Profil Kependudukan (PDF)
-                        </a>
-
                         <button type="button" @click="riwayatOpen = !riwayatOpen"
-                            class="btn-secondary text-xs py-1.5 px-3 ml-auto">
+                            class="btn-secondary text-xs py-1.5 px-3">
                             <i class="bi bi-clock-history"></i> Riwayat
                             <i class="bi text-[10px]" :class="riwayatOpen ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
                         </button>

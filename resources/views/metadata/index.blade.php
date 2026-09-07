@@ -1,6 +1,6 @@
 <x-layouts.public title="Metadata Indikator">
 
-    <div class="bg-gradient-to-r from-gray-900 to-gray-700 text-white py-8 px-4 sm:px-6 lg:px-8">
+    <div class="bg-gradient-to-r from-brand-900 to-brand-700 text-white py-8 px-4 sm:px-6 lg:px-8">
         <div class="max-w-7xl mx-auto">
             <div class="flex items-center gap-3 mb-2">
                 <a href="{{ route('dashboard.publik') }}" class="text-gray-300 hover:text-white text-sm">Dashboard Publik</a>
