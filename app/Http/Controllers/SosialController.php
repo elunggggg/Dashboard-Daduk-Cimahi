@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\DataAgregat;
 use App\Services\FilterWilayahService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\View\View;
@@ -12,7 +13,7 @@ class SosialController extends Controller
 {
     public function __construct(private FilterWilayahService $filter) {}
 
-    public function __invoke(Request $request): View
+    public function __invoke(Request $request): View|JsonResponse
     {
         $latestWaktu   = $this->filter->getLatestWaktu();
         $waktuList     = $this->filter->getWaktuList();
@@ -107,24 +108,30 @@ class SosialController extends Controller
          * bukan per kelurahan). Dirangkai jadi satu baris per jenjang supaya
          * gampang ditampilkan sebagai tabel.
          */
-        $akPendidikanJumlah   = $this->aggr('ak_pendidikan_jumlah_penduduk', $waktuId, null, null);
-        $akPendidikanAngkatan = $this->aggr('ak_pendidikan_angkatan_kerja', $waktuId, null, null);
-        $akPendidikanBekerja  = $this->aggr('ak_pendidikan_bekerja', $waktuId, null, null);
+        $akPendidikanJumlah       = $this->aggr('ak_pendidikan_jumlah_penduduk', $waktuId, null, null);
+        $akPendidikanAngkatan     = $this->aggr('ak_pendidikan_angkatan_kerja', $waktuId, null, null);
+        $akPendidikanBekerja      = $this->aggr('ak_pendidikan_bekerja', $waktuId, null, null);
+        $akPendidikanBukanAk      = $this->aggr('ak_pendidikan_bukan_ak', $waktuId, null, null);
+        $akPendidikanTidakBekerja = $this->aggr('ak_pendidikan_tidak_bekerja', $waktuId, null, null);
         $akPendidikanData = collect([
             'TIDAK/BLM SEKOLAH', 'BELUM TAMAT SD/SEDERAJAT', 'TAMAT SD/SEDERAJAT',
             'SLTP/SEDERAJAT', 'SLTA/SEDERAJAT', 'DIPLOMA I/II',
             'AKADEMI/DIPLOMA III/S. MUDA', 'DIPLOMA IV/STRATA I', 'STRATA-II', 'STRATA-III',
-        ])->map(function ($jenjang) use ($akPendidikanJumlah, $akPendidikanAngkatan, $akPendidikanBekerja) {
-            $jumlah   = $akPendidikanJumlah->get("Jumlah Penduduk ({$jenjang})", 0);
-            $angkatan = $akPendidikanAngkatan->get("Angkatan Kerja ({$jenjang})", 0);
-            $bekerja  = $akPendidikanBekerja->get("Bekerja ({$jenjang})", 0);
+        ])->map(function ($jenjang) use ($akPendidikanJumlah, $akPendidikanAngkatan, $akPendidikanBekerja, $akPendidikanBukanAk, $akPendidikanTidakBekerja) {
+            $jumlah       = $akPendidikanJumlah->get("Jumlah Penduduk ({$jenjang})", 0);
+            $angkatan     = $akPendidikanAngkatan->get("Angkatan Kerja ({$jenjang})", 0);
+            $bekerja      = $akPendidikanBekerja->get("Bekerja ({$jenjang})", 0);
+            $bukanAk      = $akPendidikanBukanAk->get("Bukan Angkatan Kerja ({$jenjang})", 0);
+            $tidakBekerja = $akPendidikanTidakBekerja->get("Tidak Bekerja ({$jenjang})", 0);
 
             return [
-                'jenjang'  => $jenjang,
-                'jumlah'   => $jumlah,
-                'angkatan' => $angkatan,
-                'bekerja'  => $bekerja,
-                'apak'     => $jumlah > 0 ? round($angkatan / $jumlah * 100, 1) : 0,
+                'jenjang'       => $jenjang,
+                'jumlah'        => $jumlah,
+                'angkatan'      => $angkatan,
+                'bekerja'       => $bekerja,
+                'bukan_ak'      => $bukanAk,
+                'tidak_bekerja' => $tidakBekerja,
+                'apak'          => $jumlah > 0 ? round($angkatan / $jumlah * 100, 1) : 0,
             ];
         });
 
@@ -211,6 +218,62 @@ class SosialController extends Controller
         ];
 
         $selectedWaktu = $waktuList->firstWhere('id', $waktuId);
+
+        // Variabel yang dipakai sosial/_konten.blade.php — dipisah dari
+        // variabel filter (waktuList, kecamatanList, dst) supaya bisa dipakai
+        // ulang oleh kunjungan HTML biasa MAUPUN cabang JSON di bawah (Phase 5,
+        // filter tanpa reload) tanpa menulis daftar variabel dua kali.
+        $kontenVars = [
+            'totalPenduduk' => $totalPenduduk, 'selectedWaktu' => $selectedWaktu,
+            'pendidikanData' => $pendidikanData, 'pekerjaanData' => $pekerjaanData,
+            'jenisPekerjaanData' => $jenisPekerjaanData, 'usiaSekolahData' => $usiaSekolahData,
+            'agamaData' => $agamaData, 'ktpData' => $ktpData, 'kkData' => $kkData, 'kiaData' => $kiaData,
+            'aktaLahirData' => $aktaLahirData, 'aktaKawinData' => $aktaKawinData,
+            'golonganDarahData' => $golonganDarahData, 'ktpStatusData' => $ktpStatusData, 'kkStatusData' => $kkStatusData,
+            'kepalaKeluargaJkData' => $kepalaKeluargaJkData, 'aktaLahir05Data' => $aktaLahir05Data, 'aktaLahir017Data' => $aktaLahir017Data,
+            'shbkelData' => $shbkelData, 'angkatanKerjaData' => $angkatanKerjaData, 'pctTpak' => $pctTpak,
+            'akPendidikanData' => $akPendidikanData,
+            'kkStatusKawinData' => $kkStatusKawinData, 'kkKelPekerjaanData' => $kkKelPekerjaanData,
+            'kkAgamaData' => $kkAgamaData, 'kkPendidikanData' => $kkPendidikanData,
+            'agamaKuData' => $agamaKuData, 'kkKawinKuData' => $kkKawinKuData, 'kkPekerjaanData' => $kkPekerjaanData,
+            'pctKtp' => $pctKtp, 'pctKK' => $pctKK, 'pctKia' => $pctKia,
+            'pctAktaLahir' => $pctAktaLahir, 'pctAktaKawin' => $pctAktaKawin,
+            'pctAktaLahir05' => $pctAktaLahir05, 'pctAktaLahir017' => $pctAktaLahir017,
+            'terbitTahunan' => $terbitTahunan,
+        ];
+
+        if ($request->ajax() || $request->wantsJson()) {
+            $seri = fn (Collection $d) => ['labels' => $d->keys()->values(), 'values' => $d->values()];
+
+            return response()->json([
+                'waktu_id' => $waktuId, 'wilayah_id' => $wilayahId, 'kecamatan' => $kecamatan,
+                'konten_html' => (string) view('sosial._konten', $kontenVars)->render(),
+                // Data mentah untuk 14 kanvas Chart.js — redraw-nya di JS
+                // (gambarSemuaChart()), BUKAN lewat <script> di dalam
+                // konten_html (browser tidak menjalankan <script> hasil x-html).
+                'charts' => [
+                    'edu'          => $seri($pendidikanData),
+                    'job'          => $seri($pekerjaanData),
+                    'usia_sekolah' => $seri($usiaSekolahData),
+                    'agama'        => $seri($agamaData),
+                    'ktp_status'   => $seri($ktpStatusData),
+                    'kk_status'    => $seri($kkStatusData),
+                    'goldar'       => $seri($golonganDarahData),
+                    'shbkel'       => $seri($shbkelData),
+                    'kia'          => ['labels' => ['Memiliki KIA', 'Belum Memiliki KIA'], 'values' => [$kiaData->get('Memiliki KIA', 0), $kiaData->get('Belum Memiliki KIA', 0)]],
+                    'akta_lahir'   => ['labels' => ['Memiliki', 'Belum Memiliki'], 'values' => [$aktaLahirData->get('Memiliki Akta Lahir', 0), $aktaLahirData->get('Belum Memiliki Akta Lahir', 0)]],
+                    'kk_jk'        => $seri($kepalaKeluargaJkData),
+                    // Ketiganya SELALU seluruh 15 kelurahan, TIDAK ikut filter
+                    // wilayah/kecamatan (lihat komentar stackedPerKelurahan()) —
+                    // tetap dikirim ulang di sini supaya konsisten dengan pola
+                    // "hitung ulang semuanya" yang sama seperti kunjungan HTML,
+                    // bukan optimisasi prematur yang berisiko beda hasil.
+                    'akta_lahir_kelurahan' => $aktaLahirKelurahanData,
+                    'kia_kelurahan'        => $kiaKelurahanData,
+                    'ktp_kelurahan'        => $ktpKelurahanData,
+                ],
+            ]);
+        }
 
         return view('sosial.index', compact(
             'pendidikanData', 'pekerjaanData', 'jenisPekerjaanData', 'usiaSekolahData', 'agamaData',

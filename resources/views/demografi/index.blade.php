@@ -493,7 +493,12 @@
                             legend: { position: 'bottom', labels: { boxWidth: 10, usePointStyle: true, font: { size: 11 } } },
                             tooltip: {
                                 callbacks: {
-                                    label: (c) => `${c.dataset.label}: ${fmt(Math.abs(c.raw))} jiwa`,
+                                    label: (c) => {
+                                        const nilai = Math.abs(c.raw);
+                                        const total = @json($totalPenduduk);
+                                        const persen = total > 0 ? window.formatPersen(nilai / total * 100) : '';
+                                        return `${c.dataset.label}: ${fmt(nilai)} jiwa${persen ? ` (${persen})` : ''}`;
+                                    },
                                 },
                             },
                             datalabels: {

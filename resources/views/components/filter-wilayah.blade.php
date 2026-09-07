@@ -1,5 +1,4 @@
 @props([
-    'action',
     'kecamatanList'  => collect(),
     'wilayahList'    => collect(),
     'waktuList'      => collect(),
@@ -10,25 +9,51 @@
     'submitLabel'    => 'Tampilkan',
 ])
 
+{{-- Phase 5: tanpa reload halaman. Komponen ini TIDAK tahu-menahu soal
+     fetch/endpoint apa pun — begitu filter diterapkan atau direset ia cuma
+     memancarkan custom event `filter-berubah` ke window berisi nilai filter
+     terkini, dan halaman pemakainya (sosialApp()/demografiApp(), lihat
+     masing-masing Blade) yang mendengarkan event itu lalu melakukan fetch. --}}
 <div
     x-data="{
         selectedKecamatan: @js($kecamatan ?? ''),
+        selectedWilayah: @js($wilayahId ? (string) $wilayahId : ''),
+        selectedWaktu: @js($waktuId ? (string) $waktuId : ''),
         wilayahAll: @js($wilayahList->values()),
         get filteredKelurahan() {
             if (!this.selectedKecamatan) return this.wilayahAll;
             return this.wilayahAll.filter(w => w.nama_kecamatan === this.selectedKecamatan);
         },
+        onKecamatanChange() {
+            // Kelurahan yang tidak lagi berada di kecamatan terpilih harus direset,
+            // kalau tidak filter akan saling bertabrakan saat dikirim.
+            const masihValid = this.filteredKelurahan.some(w => String(w.id) === this.selectedWilayah);
+            if (! masihValid) this.selectedWilayah = '';
+        },
+        terapkan() {
+            this.$dispatch('filter-berubah', {
+                kecamatan: this.selectedKecamatan || null,
+                wilayah_id: this.selectedWilayah || null,
+                waktu_id: this.selectedWaktu || null,
+            });
+        },
+        reset() {
+            this.selectedKecamatan = '';
+            this.selectedWilayah = '';
+            this.selectedWaktu = '';
+            this.terapkan();
+        },
     }"
     class="card p-4"
 >
-    <form method="GET" action="{{ $action }}" class="flex flex-wrap items-end gap-3">
+    <div class="flex flex-wrap items-end gap-3">
 
         {{-- Kecamatan --}}
         <div class="flex-1 min-w-[180px]">
             <label class="form-label text-xs">Kecamatan</label>
             <select
-                name="kecamatan"
                 x-model="selectedKecamatan"
+                @change="onKecamatanChange()"
                 class="form-select text-sm"
             >
                 <option value="">Semua Kecamatan</option>
@@ -41,11 +66,10 @@
         {{-- Kelurahan (cascade) --}}
         <div class="flex-1 min-w-[180px]">
             <label class="form-label text-xs">Kelurahan</label>
-            <select name="wilayah_id" class="form-select text-sm">
+            <select x-model="selectedWilayah" class="form-select text-sm">
                 <option value="">Semua Kelurahan</option>
                 <template x-for="w in filteredKelurahan" :key="w.id">
-                    <option :value="w.id" :selected="w.id == {{ $wilayahId ?? 'null' }}"
-                            x-text="w.nama_kelurahan"></option>
+                    <option :value="w.id" x-text="w.nama_kelurahan"></option>
                 </template>
             </select>
         </div>
@@ -53,9 +77,7 @@
         {{-- Periode — hanya dirender bila memang ADA yang bisa dipilih.
              Dengan 0 periode dropdown-nya kosong sama sekali, dengan 1 periode
              satu-satunya pilihannya adalah keadaan yang sudah tampil: dua-duanya
-             kontrol yang tidak bisa mengubah apa pun. Saat disembunyikan form
-             tidak mengirim waktu_id, dan periodeTerpilih() jatuh ke periode
-             terbaru — persis periode yang sedang ditampilkan. --}}
+             kontrol yang tidak bisa mengubah apa pun. --}}
         @if($showWaktu && $waktuList->count() > 1)
             <div class="flex-1 min-w-[150px]">
                 <label class="form-label text-xs">Periode</label>
@@ -68,11 +90,9 @@
                      Halaman berangka ARUS (Mobilitas) memakai filternya sendiri,
                      dan Ekspor boleh karena menulis baris mentah tanpa meringkas.
                      Lihat FilterWilayahService::periodeTerpilih($bolehSemua). --}}
-                <select name="waktu_id" class="form-select text-sm">
+                <select x-model="selectedWaktu" class="form-select text-sm">
                     @foreach($waktuList as $waktu)
-                        <option value="{{ $waktu->id }}" @selected($waktuId == $waktu->id)>
-                            {{ $waktu->label }}
-                        </option>
+                        <option value="{{ $waktu->id }}">{{ $waktu->label }}</option>
                     @endforeach
                 </select>
             </div>
@@ -84,17 +104,17 @@
             </div>
         @endif
 
-        <button type="submit" class="btn-primary py-2">
+        <button type="button" @click="terapkan()" class="btn-primary py-2">
             <i class="bi bi-funnel text-xs"></i>
             {{ $submitLabel }}
         </button>
 
-        @if(request()->hasAny(['kecamatan','wilayah_id','waktu_id']))
-            <a href="{{ $action }}" class="btn-secondary py-2">
-                <i class="bi bi-x-circle text-xs"></i>
-                Reset
-            </a>
-        @endif
+        <button type="button" @click="reset()" class="btn-secondary py-2"
+                x-show="selectedKecamatan || selectedWilayah"
+                x-cloak>
+            <i class="bi bi-x-circle text-xs"></i>
+            Reset
+        </button>
 
-    </form>
+    </div>
 </div>

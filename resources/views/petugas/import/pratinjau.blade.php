@@ -276,23 +276,27 @@
                             </p>
                         @endif
 
-                        <div @class(['pt-2', 'opacity-50' => ! $hasil->adaDuplikat()])>
+                        <div @class(['pt-2', 'opacity-50 pointer-events-none' => ! $hasil->adaDuplikat()])>
                             <span class="block text-xs font-semibold text-gray-700 mb-2">
                                 Bila data sudah ada
                             </span>
-                            <label class="flex items-start gap-2 mb-2 cursor-pointer">
+                            {{-- Opsi aktif (radio terpilih) ditandai border+bg biru, supaya
+                                 jelas mana yang sedang dipilih — bukan cuma titik radio kecil. --}}
+                            <label class="flex items-start gap-2 mb-2 p-2 rounded-lg border cursor-pointer transition-colors"
+                                   :class="dup === 'timpa' ? 'border-brand-400 bg-brand-50' : 'border-gray-200'">
                                 <input type="radio" name="mode_duplikat" value="timpa" class="mt-0.5" x-model="dup"
                                        @checked(old('mode_duplikat', 'timpa') === 'timpa')>
                                 <span class="text-xs">
-                                    <span class="font-semibold text-gray-800">Timpa</span>
+                                    <span class="font-semibold" :class="dup === 'timpa' ? 'text-brand-800' : 'text-gray-800'">Timpa</span>
                                     <span class="block text-gray-500">Nilai lama diganti nilai dari berkas, perubahannya dicatat di audit log.</span>
                                 </span>
                             </label>
-                            <label class="flex items-start gap-2 cursor-pointer">
+                            <label class="flex items-start gap-2 p-2 rounded-lg border cursor-pointer transition-colors"
+                                   :class="dup === 'lewati' ? 'border-brand-400 bg-brand-50' : 'border-gray-200'">
                                 <input type="radio" name="mode_duplikat" value="lewati" class="mt-0.5" x-model="dup"
                                        @checked(old('mode_duplikat') === 'lewati')>
                                 <span class="text-xs">
-                                    <span class="font-semibold text-gray-800">Lewati</span>
+                                    <span class="font-semibold" :class="dup === 'lewati' ? 'text-brand-800' : 'text-gray-800'">Lewati</span>
                                     <span class="block text-gray-500">Nilai lama dipertahankan, hanya kombinasi baru yang ditambahkan.</span>
                                 </span>
                             </label>

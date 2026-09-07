@@ -7,10 +7,12 @@ use App\Models\DataAgregat;
 use App\Models\DimKategori;
 use App\Models\DimWaktu;
 use App\Models\DimWilayah;
+use App\Services\DashboardCacheService;
 use App\Services\FilterWilayahService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 
 /**
  * Satu endpoint yang memasok SELURUH data halaman Dashboard Publik (peta, KPI, umur,
@@ -38,7 +40,7 @@ class DashboardDataController extends Controller
      * keluarga), responsnya `null` dan front-end menampilkan pesan
      * "Belum ada data".
      */
-    public function __invoke(Request $request, FilterWilayahService $filter): JsonResponse
+    public function __invoke(Request $request, FilterWilayahService $filter, DashboardCacheService $cache): JsonResponse
     {
         $validated = $request->validate([
             'kecamatan' => ['nullable', 'string', 'max:100'],
@@ -71,9 +73,34 @@ class DashboardDataController extends Controller
             return response()->json(['ada_data' => false]);
         }
 
+        // Query dashboard yang berat (KPI, umur, sosial, status, kelompok,
+        // dokumen, tabel) di-cache per kombinasi filter — lihat
+        // DashboardCacheService untuk skema invalidasinya (versi cache
+        // dinaikkan begitu import berhasil, bukan menghapus key satu-satu).
+        $cacheKey = $cache->key('api-dashboard', [$kecamatan, $kelurahanId, $waktuId]);
+
+        $payload = Cache::remember(
+            $cacheKey,
+            DashboardCacheService::TTL_DETIK,
+            function () use ($waktuId, $kelurahanId, $kecamatan, $kelurahanTerpilih, $latestWaktu) {
+                return $this->rakitPayload($waktuId, $kelurahanId, $kecamatan, $kelurahanTerpilih, $latestWaktu);
+            }
+        );
+
+        return response()->json($payload);
+    }
+
+    /** Merakit seluruh payload dashboard — dipisah dari __invoke() supaya gampang dibungkus Cache::remember(). */
+    private function rakitPayload(int $waktuId, ?int $kelurahanId, ?string $kecamatan, ?DimWilayah $kelurahanTerpilih, DimWaktu $latestWaktu): array
+    {
         $genderKota = $this->aggr('jenis_kelamin', $waktuId, null, null);
         $lakiKota   = (int) $genderKota->get('Laki-laki', 0);
         $prKota     = (int) $genderKota->get('Perempuan', 0);
+        // Total kota dihitung ulang dari $genderKota (bukan menerima parameter
+        // dari __invoke()) supaya rakitPayload() tetap satu fungsi yang berdiri
+        // sendiri lengkap dengan seluruh query beratnya — cocok dibungkus
+        // Cache::remember() tanpa harus mengangkut variabel dari luar closure.
+        $totalPendudukKota = $lakiKota + $prKota;
         $rasioKota  = $totalPendudukKota > 0 ? $lakiKota / $totalPendudukKota : 0.5;
 
         $genderData = $this->aggr('jenis_kelamin', $waktuId, $kelurahanId, $kecamatan);
@@ -105,7 +132,7 @@ class DashboardDataController extends Controller
 
         $wajibKtpUmurData = $ageData->filter(fn ($v, $k) => in_array($k, self::WAJIB_KTP_BANDS, true));
 
-        return response()->json([
+        return [
             'ada_data' => true,
             'sumber' => "Data Kependudukan Berdasarkan Kemendagri Semester {$latestWaktu->semester} Tahun {$latestWaktu->tahun}",
             'filter' => [
@@ -181,7 +208,7 @@ class DashboardDataController extends Controller
             // filter kecamatan/kelurahan yang sedang aktif (beda dari peta.*
             // yang selalu seluruh kota).
             'tabel' => $this->tabelKelurahan($waktuId, $kelurahanId, $kecamatan),
-        ]);
+        ];
     }
 
     private const AGE_ORDER = [

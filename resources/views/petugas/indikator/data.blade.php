@@ -19,6 +19,28 @@
             akan MENGGANTI nilai lama — perubahan ini tercatat di Audit Log lengkap dengan nilai sebelum & sesudahnya.
         </div>
 
+        {{-- ── Chart per kelurahan ──
+             Hanya kelurahan asli (bukan baris rekap kota/kecamatan) — satu
+             bar = satu kelurahan, konsisten dengan chart per-kelurahan di
+             halaman publik. Dropdown periode cuma tampil kalau >1 periode
+             (pola yang sama dengan filter periode di Mobilitas/Perbandingan). --}}
+        @if ($chartPerPeriode->isNotEmpty())
+            <div class="section-card" x-data="{ periode: @js($chartPerPeriode->keys()->first()) }">
+                <div class="flex items-center justify-between mb-3 gap-3 flex-wrap">
+                    <h2 class="section-title mb-0">{{ $indikator->label }} per Kelurahan</h2>
+                    @if ($chartPerPeriode->count() > 1)
+                        <select class="form-select text-xs py-1 w-auto" x-model="periode"
+                            @change="window._renderChartIndikator(periode)">
+                            @foreach ($chartPerPeriode->keys() as $label)
+                                <option value="{{ $label }}">{{ $label }}</option>
+                            @endforeach
+                        </select>
+                    @endif
+                </div>
+                <div class="h-[400px]"><canvas id="chart-indikator-kelurahan"></canvas></div>
+            </div>
+        @endif
+
         {{-- ── Form tambah/timpa ── --}}
         <form method="POST" action="{{ route('petugas.indikator.data.store', $indikator) }}" class="card p-5">
             @csrf
@@ -104,5 +126,57 @@
             </div>
         </div>
     </div>
+
+    @if ($chartPerPeriode->isNotEmpty())
+        <x-slot:scripts>
+            <script>
+                document.addEventListener('DOMContentLoaded', function () {
+                    const fmt = window.formatAngka;
+                    const W = window.DadukColors;
+                    const dataPerPeriode = @json($chartPerPeriode);
+
+                    window._renderChartIndikator = function (periode) {
+                        const canvas = document.getElementById('chart-indikator-kelurahan');
+                        if (!canvas) return;
+                        const nilai = dataPerPeriode[periode] ?? {};
+                        const labels = Object.keys(nilai);
+                        const values = Object.values(nilai);
+                        const total = values.reduce((a, b) => a + b, 0);
+
+                        if (canvas._chartInstance) {
+                            canvas._chartInstance.destroy();
+                        }
+                        canvas._chartInstance = new Chart(canvas, {
+                            type: 'bar',
+                            data: {
+                                labels,
+                                datasets: [{ data: values, backgroundColor: W.total, borderRadius: 4, borderSkipped: false }],
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                indexAxis: 'y',
+                                plugins: {
+                                    legend: { display: false },
+                                    tooltip: { callbacks: { label: window.tooltipPersenLabel(total) } },
+                                    datalabels: {
+                                        display: true, anchor: 'end', align: 'end', clamp: true,
+                                        color: '#374151', font: { size: 9, weight: '600' },
+                                        formatter: (v) => fmt(v),
+                                    },
+                                },
+                                scales: {
+                                    x: { grid: { display: false }, ticks: { font: { size: 9 }, callback: (v) => fmt(v) } },
+                                    y: { grid: { display: false }, ticks: { font: { size: 9 } } },
+                                },
+                            },
+                        });
+                    };
+
+                    window._renderChartIndikator(@js($chartPerPeriode->keys()->first()));
+                });
+            </script>
+        </x-slot:scripts>
+    @endif
 
 </x-layouts.app>

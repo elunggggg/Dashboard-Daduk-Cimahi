@@ -51,6 +51,8 @@
                 'pink'    => ['bg' => 'bg-pink-50',    'text' => 'text-pink-700',    'hover' => 'hover:border-pink-300'],
                 'slate'   => ['bg' => 'bg-slate-100',  'text' => 'text-slate-700',   'hover' => 'hover:border-slate-300'],
                 'teal'    => ['bg' => 'bg-teal-50',    'text' => 'text-teal-700',    'hover' => 'hover:border-teal-300'],
+                'indigo'  => ['bg' => 'bg-indigo-50',  'text' => 'text-indigo-700',  'hover' => 'hover:border-indigo-300'],
+                'rose'    => ['bg' => 'bg-rose-50',    'text' => 'text-rose-700',    'hover' => 'hover:border-rose-300'],
             ];
         @endphp
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">

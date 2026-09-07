@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\DimKategori;
 use App\Models\DimWilayah;
 use App\Services\FilterWilayahService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -12,7 +13,7 @@ class PetaController extends Controller
 {
     public function __construct(private FilterWilayahService $filter) {}
 
-    public function __invoke(Request $request): View
+    public function __invoke(Request $request): View|JsonResponse
     {
         $validated = $request->validate([
             'kecamatan' => ['nullable', 'string', 'max:100'],
@@ -70,6 +71,29 @@ class PetaController extends Controller
         $pendudukPerWilayah = $semuaWilayah->pluck('total_penduduk', 'id')
             ->map(fn ($v) => (int) $v);
 
+        $totalTerpilih = (int) $wilayahStats->sum('total_penduduk');
+
+        // Phase 5: filter kecamatan/kelurahan tanpa reload halaman. GeoJSON dan
+        // choropleth TIDAK ikut dikirim ulang di sini — keduanya tidak berubah
+        // oleh filter ini (peta tidak punya filter periode, selalu periode
+        // terbaru), jadi klien cukup me-restyle layer yang SUDAH dimuat lewat
+        // kunjungan HTML pertama. Lihat window._petaGantiFilter di Blade.
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'kecamatan'      => $kecamatan,
+                'kelurahan_id'   => $kelurahanId,
+                'total_terpilih' => $totalTerpilih,
+                'jumlah_kelurahan' => $wilayahStats->count(),
+                'kelurahan_nama' => $kelurahanTerpilih?->nama_kelurahan,
+                'stats_html'     => (string) view('peta._stats', [
+                    'kelurahanTerpilih' => $kelurahanTerpilih,
+                    'wilayahStats'      => $wilayahStats,
+                    'kecamatanStats'    => $kecamatanStats,
+                    'kelurahanId'       => $kelurahanId,
+                ])->render(),
+            ]);
+        }
+
         return view('peta.index', [
             'latestWaktu'       => $latestWaktu,
             'kecamatanList'     => $kecamatanList,
@@ -81,7 +105,7 @@ class PetaController extends Controller
             'kecamatan'         => $kecamatan,
             'kelurahanId'       => $kelurahanId,
             'kelurahanTerpilih' => $kelurahanTerpilih,
-            'totalTerpilih'     => (int) $wilayahStats->sum('total_penduduk'),
+            'totalTerpilih'     => $totalTerpilih,
         ]);
     }
 }

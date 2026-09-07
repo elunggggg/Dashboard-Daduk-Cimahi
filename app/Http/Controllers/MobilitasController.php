@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\DataAgregat;
 use App\Models\DimWaktu;
 use App\Services\FilterWilayahService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\View\View;
@@ -13,7 +14,13 @@ class MobilitasController extends Controller
 {
     public function __construct(private FilterWilayahService $filter) {}
 
-    public function __invoke(Request $request): View
+    /**
+     * Satu method menghitung data untuk KEDUANYA: kunjungan pertama (HTML
+     * penuh, jalan tanpa JS sama sekali) dan filter berikutnya lewat fetch()
+     * Alpine (JSON, tanpa reload — Phase 5). Bukan dua alur logika terpisah,
+     * supaya angka kunjungan pertama dan hasil fetch tidak pernah bisa beda.
+     */
+    public function __invoke(Request $request): View|JsonResponse
     {
         $latestWaktu = $this->filter->getLatestWaktu();
         $waktuList   = $this->filter->getWaktuList();
@@ -45,11 +52,48 @@ class MobilitasController extends Controller
         // kombinasi filter periode yang tersedia di halaman ini.
         $rasioPindahDatang = $totalDatang > 0 ? round($totalPindah / $totalDatang * 100, 1) : 0;
 
-        // Tren seluruh periode
+        $selectedWaktu = $waktuList->firstWhere('id', $waktuId);
+
+        // Tren seluruh periode SENGAJA TIDAK ikut filter waktu_id (selalu
+        // menampilkan seluruh riwayat) — jadi tidak perlu dihitung ulang saat
+        // fetch AJAX filter periode, hanya dikirim pada kunjungan HTML pertama.
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'waktu_id' => $waktuId,
+                'kpi' => [
+                    'total_datang'         => $totalDatang,
+                    'total_pindah'         => $totalPindah,
+                    'saldo'                => $saldo,
+                    'rasio_pindah_datang'  => $rasioPindahDatang,
+                    'periode_label'        => $selectedWaktu->label ?? ($waktuId === null ? 'Semua Periode' : '-'),
+                ],
+                'datang' => [
+                    'labels' => $datangData->keys()->values(),
+                    'values' => $datangData->values(),
+                    'total'  => $totalDatang,
+                ],
+                'pindah' => [
+                    'labels' => $pindahData->keys()->values(),
+                    'values' => $pindahData->values(),
+                    'total'  => $totalPindah,
+                ],
+                // HTML komponen <x-rincian-indikator> dirender di server (sama
+                // persis dengan kunjungan HTML biasa) supaya tabel/filter
+                // kategori di dalamnya tidak perlu ditulis ulang di JS — lihat
+                // catatan panjang di resources/views/mobilitas/index.blade.php.
+                'rincian_html' => [
+                    'datang' => (string) view('components.rincian-indikator', [
+                        'data' => $datangData, 'total' => $totalDatang, 'chartId' => 'chart-datang',
+                    ])->render(),
+                    'pindah' => (string) view('components.rincian-indikator', [
+                        'data' => $pindahData, 'total' => $totalPindah, 'chartId' => 'chart-pindah',
+                    ])->render(),
+                ],
+            ]);
+        }
+
         $trendDatang = $this->trendPerPeriode('mobilitas_datang', $waktuList);
         $trendPindah = $this->trendPerPeriode('mobilitas_pindah', $waktuList);
-
-        $selectedWaktu = $waktuList->firstWhere('id', $waktuId);
 
         return view('mobilitas.index', compact(
             'datangData', 'pindahData',

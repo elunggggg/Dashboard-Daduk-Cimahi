@@ -103,12 +103,8 @@
                             <i class="bi bi-download"></i> Unduh
                         </button>
 
-                        <a href="{{ route('ekspor.profil') }}" class="btn-secondary text-xs py-1.5 px-3">
-                            <i class="bi bi-file-earmark-pdf"></i> Buku Profil Kependudukan (PDF)
-                        </a>
-
                         <button type="button" @click="riwayatOpen = !riwayatOpen"
-                            class="btn-secondary text-xs py-1.5 px-3 ml-auto">
+                            class="btn-secondary text-xs py-1.5 w-auto">
                             <i class="bi bi-clock-history"></i> Riwayat
                             <i class="bi text-[10px]" :class="riwayatOpen ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
                         </button>
@@ -329,9 +325,11 @@
                             <i class="bi bi-info-circle"></i> Perbandingan memerlukan minimal dua periode data.
                         </p>
                     @else
-                        <div x-show="loading" class="py-16 text-center text-gray-400">
-                            <i class="bi bi-arrow-repeat text-3xl animate-spin block mb-2"></i>
-                            Memuat…
+                        {{-- Skeleton loader (bukan spinner) — konsisten dengan pola KPI di atas. --}}
+                        <div x-show="loading" class="p-4 sm:p-5 space-y-3">
+                            <div class="skeleton h-40 w-full"></div>
+                            <div class="skeleton h-3 w-2/3"></div>
+                            <div class="skeleton h-3 w-1/2"></div>
                         </div>
                         <div x-show="!loading && ada && !labels.length" x-cloak
                             class="py-16 text-center text-gray-400">
@@ -504,9 +502,12 @@
                                     legend: {
                                         display: false
                                     },
+                                    // Tooltip standar: label + angka + persentase (bukan cuma
+                                    // angka mentah), sama pola dengan chart lain di aplikasi ini
+                                    // (lihat window.tooltipPersenLabel di resources/js/app.js).
                                     tooltip: {
                                         callbacks: {
-                                            label: (c) => `${c.label}: ${fmt(c.raw)} jiwa`
+                                            label: window.tooltipPersenLabel(obj.laki + obj.perempuan)
                                         }
                                     },
                                     // Angka DI LUAR lingkaran (anchor+align 'end'),
