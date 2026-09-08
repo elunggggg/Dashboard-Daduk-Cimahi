@@ -65,6 +65,7 @@ class BackupController extends Controller
                 'nama_file' => '—',
                 'status'    => 'gagal',
                 'catatan'   => substr($e->getMessage(), 0, 1000),
+                'user_id'   => auth()->id(),
             ]);
 
             $this->audit->record(AuditLogService::AKSI_BACKUP, 'backups', null, ['status' => 'gagal']);
@@ -77,6 +78,7 @@ class BackupController extends Controller
                 'nama_file' => '—',
                 'status'    => 'gagal',
                 'catatan'   => substr($out, -1000),
+                'user_id'   => auth()->id(),
             ]);
 
             $this->audit->record(AuditLogService::AKSI_BACKUP, 'backups', null, ['status' => 'gagal']);
@@ -92,14 +94,15 @@ class BackupController extends Controller
             ->first();
 
         $catatan = Backup::create([
-            'nama_file'   => $terbaru ? basename($terbaru) : '—',
-            'ukuran_byte' => $terbaru ? $disk->size($terbaru) : 0,
-            'status'      => 'sukses',
+            'nama_file'    => $terbaru ? basename($terbaru) : '—',
+            'ukuran_bytes' => $terbaru ? $disk->size($terbaru) : 0,
+            'status'       => 'sukses',
+            'user_id'      => auth()->id(),
         ]);
 
         $this->audit->record(AuditLogService::AKSI_BACKUP, 'backups', null, [
-            'nama_file'   => $catatan->nama_file,
-            'ukuran_byte' => $catatan->ukuran_byte,
+            'nama_file'    => $catatan->nama_file,
+            'ukuran_bytes' => $catatan->ukuran_bytes,
         ]);
 
         return back()->with('success', "Backup berhasil dibuat: {$catatan->nama_file}");

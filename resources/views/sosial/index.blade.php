@@ -3,8 +3,7 @@
     <div class="bg-gradient-to-r from-brand-900 to-brand-700 text-white py-8 px-4 sm:px-6 lg:px-8">
         <div class="max-w-7xl mx-auto">
             <div class="flex items-center gap-3 mb-2">
-                <a href="{{ route('dashboard.publik') }}" class="text-white/60 hover:text-white text-sm">Dashboard
-                    Publik</a>
+                <a href="{{ route('dashboard.publik') }}" class="text-white/60 hover:text-white text-sm">Dashboard Publik</a>
                 <span class="text-white/40">/</span>
                 <span class="text-white text-sm font-medium">Sosial</span>
             </div>
@@ -15,684 +14,261 @@
         </div>
     </div>
 
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+    {{-- ── Phase 5: filter tanpa reload ──
+         <x-filter-wilayah> cuma memancarkan event `filter-berubah` (lihat
+         komponennya) — sosialApp() di bawah yang mendengarkan lalu fetch()
+         ke route yang sama. Konten di bawah filter dirender server (partial
+         sosial/_konten.blade.php) dan diganti utuh lewat x-html; 14 kanvas
+         Chart.js-nya di-redraw terpisah oleh gambarSemuaChart(), dibaca dari
+         kunci `charts` pada respons JSON. --}}
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6"
+         x-data="sosialApp({
+             waktu_id: @js($waktuId), wilayah_id: @js($wilayahId), kecamatan: @js($kecamatan),
+             konten_html: @js((string) view('sosial._konten', [
+                 'totalPenduduk' => $totalPenduduk, 'selectedWaktu' => $selectedWaktu,
+                 'pendidikanData' => $pendidikanData, 'pekerjaanData' => $pekerjaanData,
+                 'jenisPekerjaanData' => $jenisPekerjaanData, 'usiaSekolahData' => $usiaSekolahData,
+                 'agamaData' => $agamaData, 'ktpData' => $ktpData, 'kkData' => $kkData, 'kiaData' => $kiaData,
+                 'aktaLahirData' => $aktaLahirData, 'aktaKawinData' => $aktaKawinData,
+                 'golonganDarahData' => $golonganDarahData, 'ktpStatusData' => $ktpStatusData, 'kkStatusData' => $kkStatusData,
+                 'kepalaKeluargaJkData' => $kepalaKeluargaJkData, 'aktaLahir05Data' => $aktaLahir05Data, 'aktaLahir017Data' => $aktaLahir017Data,
+                 'shbkelData' => $shbkelData, 'angkatanKerjaData' => $angkatanKerjaData, 'pctTpak' => $pctTpak,
+                 'akPendidikanData' => $akPendidikanData,
+                 'kkStatusKawinData' => $kkStatusKawinData, 'kkKelPekerjaanData' => $kkKelPekerjaanData,
+                 'kkAgamaData' => $kkAgamaData, 'kkPendidikanData' => $kkPendidikanData,
+                 'agamaKuData' => $agamaKuData, 'kkKawinKuData' => $kkKawinKuData, 'kkPekerjaanData' => $kkPekerjaanData,
+                 'pctKtp' => $pctKtp, 'pctKK' => $pctKK, 'pctKia' => $pctKia,
+                 'pctAktaLahir' => $pctAktaLahir, 'pctAktaKawin' => $pctAktaKawin,
+                 'pctAktaLahir05' => $pctAktaLahir05, 'pctAktaLahir017' => $pctAktaLahir017,
+                 'terbitTahunan' => $terbitTahunan,
+             ])->render()),
+             charts: {
+                 edu: { labels: @json($pendidikanData->keys()->values()), values: @json($pendidikanData->values()) },
+                 job: { labels: @json($pekerjaanData->keys()->values()), values: @json($pekerjaanData->values()) },
+                 usia_sekolah: { labels: @json($usiaSekolahData->keys()->values()), values: @json($usiaSekolahData->values()) },
+                 agama: { labels: @json($agamaData->keys()->values()), values: @json($agamaData->values()) },
+                 ktp_status: { labels: @json($ktpStatusData->keys()->values()), values: @json($ktpStatusData->values()) },
+                 kk_status: { labels: @json($kkStatusData->keys()->values()), values: @json($kkStatusData->values()) },
+                 goldar: { labels: @json($golonganDarahData->keys()->values()), values: @json($golonganDarahData->values()) },
+                 shbkel: { labels: @json($shbkelData->keys()->values()), values: @json($shbkelData->values()) },
+                 kia: { labels: ['Memiliki KIA', 'Belum Memiliki KIA'], values: [@json($kiaData->get('Memiliki KIA', 0)), @json($kiaData->get('Belum Memiliki KIA', 0))] },
+                 akta_lahir: { labels: ['Memiliki', 'Belum Memiliki'], values: [@json($aktaLahirData->get('Memiliki Akta Lahir', 0)), @json($aktaLahirData->get('Belum Memiliki Akta Lahir', 0))] },
+                 kk_jk: { labels: @json($kepalaKeluargaJkData->keys()->values()), values: @json($kepalaKeluargaJkData->values()) },
+                 akta_lahir_kelurahan: @json($aktaLahirKelurahanData),
+                 kia_kelurahan: @json($kiaKelurahanData),
+                 ktp_kelurahan: @json($ktpKelurahanData),
+             },
+         })"
+         @filter-berubah.window="muat($event.detail)"
+    >
 
-        <x-filter-wilayah action="{{ route('sosial.index') }}" :kecamatanList="$kecamatanList" :wilayahList="$wilayahList" :waktuList="$waktuList"
-            :kecamatan="$kecamatan" :wilayahId="$wilayahId" :waktuId="$waktuId" />
+        <x-filter-wilayah
+            action="{{ route('sosial.index') }}"
+            :kecamatanList="$kecamatanList"
+            :wilayahList="$wilayahList"
+            :waktuList="$waktuList"
+            :kecamatan="$kecamatan"
+            :wilayahId="$wilayahId"
+            :waktuId="$waktuId"
+        />
 
-        @if ($totalPenduduk === 0)
-            <div class="alert-info flex items-center gap-2">
-                <i class="bi bi-info-circle"></i>
-                Tidak ada data untuk filter yang dipilih.
-            </div>
-        @endif
-
-        {{-- Dokumen Kependudukan — progress bars --}}
-        <div class="card" x-data="{ pilihDok: '' }">
-            <div class="p-4 border-b border-gray-100 flex items-center justify-between gap-3 flex-wrap">
-                <div>
-                    <h2 class="text-sm font-bold text-gray-900">Kepemilikan Dokumen Kependudukan</h2>
-                    <p class="text-xs text-gray-400">Periode: {{ $selectedWaktu?->label ?? '-' }}</p>
-                </div>
-                @php
-                    // 'dari' = penyebut yang dipakai SosialController, ditulis di
-                    // layar supaya persentasenya tidak bisa disalahartikan.
-                    $dokumen = [
-                        [
-                            'label' => 'KTP-el sudah cetak',
-                            'pct' => $pctKtp,
-                            'jumlah' => $ktpData->get('Sudah Cetak KTP', 0),
-                            'dari' => 'wajib KTP',
-                            'color' => 'bg-blue-500',
-                        ],
-                        [
-                            'label' => 'KK sudah TTE',
-                            'pct' => $pctKK,
-                            'jumlah' => $kkData->get('KK Sudah TTE', 0),
-                            'dari' => 'kepala keluarga',
-                            'color' => 'bg-green-500',
-                        ],
-                        [
-                            'label' => 'KIA (anak 0–17 th)',
-                            'pct' => $pctKia,
-                            'jumlah' => $kiaData->get('Memiliki KIA', 0),
-                            'dari' => 'anak 0–17 tahun',
-                            'color' => 'bg-orange-500',
-                        ],
-                        [
-                            'label' => 'Akta Kelahiran',
-                            'pct' => $pctAktaLahir,
-                            'jumlah' => $aktaLahirData->get('Memiliki Akta Lahir', 0),
-                            'dari' => 'penduduk',
-                            'color' => 'bg-purple-500',
-                        ],
-                        [
-                            'label' => 'Akta Perkawinan',
-                            'pct' => $pctAktaKawin,
-                            'jumlah' => $aktaKawinData->get('Memiliki Akta Kawin', 0),
-                            'dari' => 'berstatus kawin',
-                            'color' => 'bg-teal-500',
-                        ],
-                        [
-                            'label' => 'Akta Lahir (0-5 th)',
-                            'pct' => $pctAktaLahir05,
-                            'jumlah' => $aktaLahir05Data->get('Memiliki Akta Lahir 0-5 Tahun', 0),
-                            'dari' => 'anak 0-5 tahun',
-                            'color' => 'bg-cyan-500',
-                        ],
-                        [
-                            'label' => 'Akta Lahir (0-17 th)',
-                            'pct' => $pctAktaLahir017,
-                            'jumlah' => $aktaLahir017Data->get('Memiliki Akta Lahir 0-17 Tahun', 0),
-                            'dari' => 'anak 0-17 tahun',
-                            'color' => 'bg-sky-500',
-                        ],
-                    ];
-                @endphp
-                <select class="form-select text-xs py-1 w-auto" x-model="pilihDok">
-                    <option value="">Semua dokumen</option>
-                    @foreach ($dokumen as $dok)
-                        <option value="{{ $dok['label'] }}">{{ $dok['label'] }}</option>
-                    @endforeach
-                </select>
-            </div>
-            <div class="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                @foreach ($dokumen as $dok)
-                    <div class="space-y-1.5" x-show="pilihDok === '' || pilihDok === @js($dok['label'])">
-                        <div class="flex justify-between text-xs">
-                            <span class="font-medium text-gray-700">{{ $dok['label'] }}</span>
-                            <span class="font-bold text-gray-900">{{ $dok['pct'] }}%</span>
-                        </div>
-                        <div class="w-full bg-gray-100 rounded-full h-2.5">
-                            <div class="{{ $dok['color'] }} h-2.5 rounded-full transition-all"
-                                style="width:{{ min($dok['pct'], 100) }}%"></div>
-                        </div>
-                        <p class="text-[10px] text-gray-400">
-                            {{ number_format($dok['jumlah'], 0, ',', '.') }} dari total {{ $dok['dari'] }}
-                        </p>
-                    </div>
-                @endforeach
+        <div x-show="loading" class="space-y-6">
+            <x-skeleton-card :rows="4" />
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <x-skeleton-card :rows="3" /><x-skeleton-card :rows="3" />
             </div>
         </div>
 
-        {{-- KIA & Akta Lahir — donut Memiliki vs Belum --}}
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-            <div class="section-card">
-                <h2 class="section-title">Kepemilikan KIA</h2>
-                <p class="text-xs text-gray-400 -mt-2 mb-3">Anak usia 0–17 tahun</p>
-                <div class="h-[250px]"><canvas id="chart-kia"></canvas></div>
-                <x-rincian-indikator :data="$kiaData->only(['Memiliki KIA', 'Belum Memiliki KIA'])" :total="$kiaData->get('Jumlah Anak Usia 0-17 Tahun', 0)" chart-id="chart-kia" />
-            </div>
-            <div class="section-card">
-                <h2 class="section-title">Kepemilikan Akta Lahir</h2>
-                <p class="text-xs text-gray-400 -mt-2 mb-3">Seluruh usia</p>
-                <div class="h-[250px]"><canvas id="chart-akta-lahir"></canvas></div>
-                <x-rincian-indikator :data="$aktaLahirData->only(['Memiliki Akta Lahir', 'Belum Memiliki Akta Lahir'])" :total="$aktaLahirData->get('Jumlah Penduduk', 0)" chart-id="chart-akta-lahir" />
-            </div>
-        </div>
-
-        {{-- Pendidikan + Pekerjaan --}}
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
-
-            <div class="section-card">
-                <h2 class="section-title">Pendidikan</h2>
-                <p class="text-xs text-gray-400 -mt-2 mb-3">Jenjang tertinggi yang ditamatkan — diurutkan terbanyak</p>
-                <div class="h-[350px]"><canvas id="chart-edu"></canvas></div>
-                <x-rincian-indikator :data="$pendidikanData" :total="$pendidikanData->sum()" chart-id="chart-edu" />
-            </div>
-
-            <div class="section-card">
-                <h2 class="section-title">Pekerjaan</h2>
-                <p class="text-xs text-gray-400 -mt-2 mb-3">Jenis pekerjaan/kegiatan utama — diurutkan terbanyak</p>
-                <div class="h-[350px]"><canvas id="chart-job"></canvas></div>
-                <x-rincian-indikator :data="$pekerjaanData" :total="$pekerjaanData->sum()" chart-id="chart-job" />
-            </div>
-        </div>
-
-        {{-- Kepemilikan KTP, Kepemilikan KK & Golongan Darah --}}
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
-            <div class="section-card">
-                <h2 class="section-title">Kepemilikan KTP</h2>
-                <div class="h-[300px]"><canvas id="chart-ktp-status"></canvas></div>
-                <x-rincian-indikator :data="$ktpStatusData" :total="$ktpData->get('Wajib KTP', 0)" chart-id="chart-ktp-status" />
-            </div>
-            <div class="section-card">
-                <h2 class="section-title">Kepemilikan KK</h2>
-                <div class="h-[300px]"><canvas id="chart-kk-status"></canvas></div>
-                <x-rincian-indikator :data="$kkStatusData" :total="$kkData->get('Jumlah Kepala Keluarga', 0)" chart-id="chart-kk-status" />
-            </div>
-            <div class="section-card">
-                <h2 class="section-title">Golongan Darah</h2>
-                <div class="h-[300px]"><canvas id="chart-goldar"></canvas></div>
-                <x-rincian-indikator :data="$golonganDarahData" :total="$golonganDarahData->sum()" chart-id="chart-goldar" />
-            </div>
-        </div>
-
-        {{-- Rincian Jenis Pekerjaan + Usia Sekolah --}}
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-
-            <div class="card">
-                <div class="p-4 border-b border-gray-100">
-                    <h2 class="text-sm font-bold text-gray-900">Rincian Jenis Pekerjaan</h2>
-                    <p class="text-xs text-gray-400">17 jenis pekerjaan rinci — melengkapi kelompok besar di atas</p>
-                </div>
-                <div class="p-4">
-                    <x-rincian-indikator :data="$jenisPekerjaanData" :total="$jenisPekerjaanData->sum()" />
-                </div>
-            </div>
-
-            <div class="card">
-                <div class="p-4 border-b border-gray-100">
-                    <h2 class="text-sm font-bold text-gray-900">Penduduk Usia Sekolah</h2>
-                    <p class="text-xs text-gray-400">Berdasarkan jenjang pendidikan</p>
-                </div>
-                <div class="p-4">
-                    <div class="h-48"><canvas id="chart-usia-sekolah"></canvas></div>
-                    <x-rincian-indikator :data="$usiaSekolahData" :total="$usiaSekolahData->sum()" chart-id="chart-usia-sekolah" />
-                </div>
-            </div>
-        </div>
-
-        {{-- Agama --}}
-        <div class="section-card">
-            <h2 class="section-title">Agama</h2>
-            <p class="text-xs text-gray-400 -mt-2 mb-3">Agama yang dianut penduduk — diurutkan terbanyak</p>
-            <div class="h-[300px]"><canvas id="chart-agama"></canvas></div>
-            <x-rincian-indikator :data="$agamaData" :total="$agamaData->sum()" chart-id="chart-agama" />
-        </div>
-
-        {{-- Kepala Keluarga + Angkatan Kerja --}}
-        <div class="grid grid-cols-1 gap-4">
-
-            <div class="section-card">
-                <h2 class="section-title">Kepala Keluarga</h2>
-                <p class="text-xs text-gray-400 -mt-2 mb-3">
-                    Berdasarkan jenis kelamin
-                </p>
-
-                <div class="flex items-center gap-10 max-w-5xl mx-auto">
-
-                    @php
-                        $totalKk = $kepalaKeluargaJkData->sum();
-                    @endphp
-
-                    {{-- Donut --}}
-                    <div class="w-44 h-44 flex-shrink-0">
-                        <canvas id="chart-kk-jk"></canvas>
-                    </div>
-
-                    {{-- Detail --}}
-                    <div class="space-y-5 flex-1 max-w-3xl">
-
-                        @foreach ($kepalaKeluargaJkData as $label => $jumlah)
-                            @php
-                                $pct = $totalKk > 0 ? round(($jumlah / $totalKk) * 100, 1) : 0;
-                            @endphp
-
-                            <div>
-                                <div class="flex justify-between items-center text-sm mb-2">
-                                    <span class="font-medium text-gray-700">
-                                        {{ $label }}
-                                    </span>
-
-                                    <span class="text-sm text-gray-500">
-                                        {{ number_format($jumlah, 0, ',', '.') }}
-                                        ({{ $pct }}%)
-                                    </span>
-                                </div>
-
-                                <div class="w-full bg-gray-100 rounded-full h-2">
-                                    <div class="h-2 rounded-full {{ str_contains($label, 'Laki') ? 'bg-blue-500' : 'bg-pink-500' }}"
-                                        style="width: {{ $pct }}%">
-                                    </div>
-                                </div>
-                            </div>
-                        @endforeach
-
-                    </div>
-
-                </div>
-            </div>
-
-            <div class="card">
-                <div class="p-4 border-b border-gray-100">
-                    <h2 class="text-sm font-bold text-gray-900">Angkatan Kerja & TPAK</h2>
-                    <p class="text-xs text-gray-400">Tingkat Partisipasi Angkatan Kerja, usia 15-64 tahun</p>
-                </div>
-                <div class="p-4">
-                    <div class="grid grid-cols-2 gap-3 mb-3">
-                        <div class="rounded-lg bg-gray-50 p-3">
-                            <p class="text-[11px] text-gray-500">Angkatan Kerja</p>
-                            <p class="text-lg font-bold text-gray-900">
-                                {{ number_format($angkatanKerjaData->get('Angkatan Kerja', 0), 0, ',', '.') }}
-                            </p>
-                        </div>
-                        <div class="rounded-lg bg-brand-50 p-3">
-                            <p class="text-[11px] text-brand-700">TPAK</p>
-                            <p class="text-lg font-bold text-brand-800">{{ $pctTpak }}%</p>
-                        </div>
-                    </div>
-                    <p class="text-[11px] text-gray-400">
-                        Dari {{ number_format($angkatanKerjaData->get('Jumlah Penduduk Usia Kerja', 0), 0, ',', '.') }}
-                        penduduk usia kerja (15-64 tahun).
-                    </p>
-                </div>
-            </div>
-        </div>
-
-        {{-- Kepala Keluarga: Rincian Demografi --}}
-        <div class="card">
-            <div class="p-4 border-b border-gray-100">
-                <h2 class="text-sm font-bold text-gray-900">Kepala Keluarga: Rincian Demografi</h2>
-                <p class="text-xs text-gray-400">Status perkawinan, pendidikan, kelompok pekerjaan, dan agama para
-                    kepala keluarga</p>
-            </div>
-            <div class="p-4 grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                    <p class="text-xs font-semibold text-gray-600 mb-2">Status Perkawinan</p>
-                    <x-rincian-indikator :data="$kkStatusKawinData" :total="$kkStatusKawinData->sum()" />
-                </div>
-                <div>
-                    <p class="text-xs font-semibold text-gray-600 mb-2">Agama</p>
-                    <x-rincian-indikator :data="$kkAgamaData" :total="$kkAgamaData->sum()" />
-                </div>
-                <div>
-                    <p class="text-xs font-semibold text-gray-600 mb-2">Tingkat Pendidikan</p>
-                    <x-rincian-indikator :data="$kkPendidikanData" :total="$kkPendidikanData->sum()" />
-                </div>
-                <div>
-                    <p class="text-xs font-semibold text-gray-600 mb-2">Kelompok Pekerjaan</p>
-                    <x-rincian-indikator :data="$kkKelPekerjaanData" :total="$kkKelPekerjaanData->sum()" />
-                </div>
-            </div>
-            <div class="px-4 pb-4">
-                <p class="text-xs font-semibold text-gray-600 mb-2">Jenis Pekerjaan KTP-EL (99 jenis, se-Kota)</p>
-                <x-rincian-indikator :data="$kkPekerjaanData" :total="$kkPekerjaanData->sum()" />
-            </div>
-        </div>
-
-        {{-- Kepala Keluarga & Agama per Kecamatan menurut Kelompok Umur --}}
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <div class="card">
-                <div class="p-4 border-b border-gray-100">
-                    <h2 class="text-sm font-bold text-gray-900">Status Perkawinan KK per Kecamatan</h2>
-                    <p class="text-xs text-gray-400">Total lintas kelompok umur — rincian usia ada di Ekspor PDF</p>
-                </div>
-                <div class="p-4 overflow-x-auto">
-                    <table class="w-full text-xs">
-                        <thead>
-                            <tr class="text-left text-gray-400 border-b border-gray-100">
-                                <th class="pb-2 font-medium">Kecamatan</th>
-                                @foreach (['Belum Kawin', 'Kawin', 'Cerai Hidup', 'Cerai Mati'] as $label)
-                                    <th class="pb-2 font-medium text-right">{{ $label }}</th>
-                                @endforeach
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach ($kkKawinKuData as $namaKecamatan => $row)
-                                <tr class="border-b border-gray-50">
-                                    <td class="py-1.5 text-gray-700">{{ $namaKecamatan }}</td>
-                                    @foreach (['Belum Kawin', 'Kawin', 'Cerai Hidup', 'Cerai Mati'] as $label)
-                                        <td class="py-1.5 text-right text-gray-900">
-                                            {{ number_format($row->get($label, 0), 0, ',', '.') }}</td>
-                                    @endforeach
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <div class="card">
-                <div class="p-4 border-b border-gray-100">
-                    <h2 class="text-sm font-bold text-gray-900">Agama per Kecamatan</h2>
-                    <p class="text-xs text-gray-400">Total lintas kelompok umur — rincian usia ada di Ekspor PDF</p>
-                </div>
-                <div class="p-4 overflow-x-auto">
-                    <table class="w-full text-xs">
-                        <thead>
-                            <tr class="text-left text-gray-400 border-b border-gray-100">
-                                <th class="pb-2 font-medium">Kecamatan</th>
-                                @foreach (['Islam', 'Kristen', 'Katolik', 'Hindu', 'Buddha', 'Konghucu', 'Kepercayaan'] as $label)
-                                    <th class="pb-2 font-medium text-right">{{ $label }}</th>
-                                @endforeach
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach ($agamaKuData as $namaKecamatan => $row)
-                                <tr class="border-b border-gray-50">
-                                    <td class="py-1.5 text-gray-700">{{ $namaKecamatan }}</td>
-                                    @foreach (['Islam', 'Kristen', 'Katolik', 'Hindu', 'Buddha', 'Konghucu', 'Kepercayaan'] as $label)
-                                        <td class="py-1.5 text-right text-gray-900">
-                                            {{ number_format($row->get($label, 0), 0, ',', '.') }}</td>
-                                    @endforeach
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        {{-- Angkatan Kerja per Tingkat Pendidikan (se-Kota) --}}
-        <div class="card">
-            <div class="p-4 border-b border-gray-100">
-                <h2 class="text-sm font-bold text-gray-900">Angkatan Kerja Menurut Tingkat Pendidikan</h2>
-                <p class="text-xs text-gray-400">Se-Kota — data ini tidak mengikuti filter wilayah</p>
-            </div>
-            <div class="p-4 overflow-x-auto">
-                <table class="w-full text-xs">
-                    <thead>
-                        <tr class="text-left text-gray-400 border-b border-gray-100">
-                            <th class="pb-2 font-medium">Tingkat Pendidikan</th>
-                            <th class="pb-2 font-medium text-right">Jumlah Penduduk</th>
-                            <th class="pb-2 font-medium text-right">Angkatan Kerja</th>
-                            <th class="pb-2 font-medium text-right">Bekerja</th>
-                            <th class="pb-2 font-medium text-right">APAK</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach ($akPendidikanData as $row)
-                            <tr class="border-b border-gray-50">
-                                <td class="py-1.5 text-gray-700">{{ $row['jenjang'] }}</td>
-                                <td class="py-1.5 text-right text-gray-900">
-                                    {{ number_format($row['jumlah'], 0, ',', '.') }}</td>
-                                <td class="py-1.5 text-right text-gray-900">
-                                    {{ number_format($row['angkatan'], 0, ',', '.') }}</td>
-                                <td class="py-1.5 text-right text-gray-900">
-                                    {{ number_format($row['bekerja'], 0, ',', '.') }}</td>
-                                <td class="py-1.5 text-right font-medium text-brand-700">{{ $row['apak'] }}%</td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        {{-- Penerbitan Dokumen (se-Kota, per tahun) --}}
-        <div class="card">
-            <div class="p-4 border-b border-gray-100">
-                <h2 class="text-sm font-bold text-gray-900">Penerbitan Dokumen Se-Kota</h2>
-                <p class="text-xs text-gray-400">Total setahun terakhir — data ini se-Kota, tidak mengikuti filter
-                    wilayah</p>
-            </div>
-            <div class="p-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
-                @foreach ($terbitTahunan as $label => $jumlah)
-                    <div class="rounded-lg bg-gray-50 p-3 text-center">
-                        <p class="text-lg font-bold text-gray-900">{{ number_format($jumlah, 0, ',', '.') }}</p>
-                        <p class="text-[11px] text-gray-500">{{ $label }}</p>
-                    </div>
-                @endforeach
-            </div>
-        </div>
-
-        {{-- Status Hubungan dalam Keluarga --}}
-        <div class="section-card">
-            <h2 class="section-title">Status Hubungan dalam Keluarga</h2>
-            <p class="text-xs text-gray-400 -mt-2 mb-3">Kedudukan penduduk terhadap kepala keluarga</p>
-            <div class="h-[300px]"><canvas id="chart-shbkel"></canvas></div>
-            <x-rincian-indikator :data="$shbkelData" :total="$shbkelData->sum()" chart-id="chart-shbkel" />
-        </div>
-
-        {{-- Wajib Akta Lahir / KIA / KTP per Kelurahan — stacked (Memiliki
-             hijau vs Belum merah muda). SELALU 15 kelurahan terlepas dari
-             filter kelurahan/kecamatan yang aktif (begitu memang gunanya). --}}
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
-            <div class="section-card">
-                <h2 class="section-title">Wajib Akta Lahir per Kelurahan</h2>
-                <div class="h-[420px]"><canvas id="chart-akta-lahir-kelurahan"></canvas></div>
-            </div>
-            <div class="section-card">
-                <h2 class="section-title">Wajib KIA per Kelurahan</h2>
-                <div class="h-[420px]"><canvas id="chart-kia-kelurahan"></canvas></div>
-            </div>
-            <div class="section-card">
-                <h2 class="section-title">Wajib KTP per Kelurahan</h2>
-                <div class="h-[420px]"><canvas id="chart-ktp-kelurahan"></canvas></div>
-            </div>
-        </div>
+        <div x-show="!loading" x-cloak x-html="kontenHtml" class="space-y-6"></div>
 
     </div>
 
     <x-slot:scripts>
-        <script>
-            document.addEventListener('DOMContentLoaded', function() {
-                const fmt = window.formatAngka;
-                const W = window.DadukColors;
-                const K = window.DadukKategori;
+    <script>
+        // ── x-data utama halaman Sosial: filter kecamatan/kelurahan/periode
+        // tanpa reload (Phase 5). Konten (tabel, progress bar, komponen
+        // komponen "rincian-indikator") dirender server & diganti lewat x-html;
+        // 14 kanvas Chart.js di-redraw manual lewat gambarSemuaChart(), sama
+        // fungsi dipakai untuk kunjungan pertama (init()) maupun tiap fetch.
+        function sosialApp(seed) {
+            return {
+                loading: false,
+                kontenHtml: seed.konten_html,
 
-                function barChart(canvasId, labels, values, opts = {}) {
-                    const total = values.reduce((a, b) => a + b, 0);
-                    return new Chart(document.getElementById(canvasId), {
-                        type: 'bar',
-                        data: {
-                            labels,
-                            datasets: [{
-                                data: values,
-                                backgroundColor: opts.warna ?? labels.map((_, i) => K[i % K.length]),
-                                borderRadius: 4,
-                                borderSkipped: false,
-                            }],
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            indexAxis: 'y',
-                            plugins: {
-                                legend: {
-                                    display: false
-                                },
-                                tooltip: {
-                                    callbacks: {
-                                        label: window.tooltipPersenLabel(total)
-                                    }
-                                },
-                                datalabels: {
-                                    display: true,
-                                    anchor: 'end',
-                                    align: 'end',
-                                    clamp: true,
-                                    color: '#374151',
-                                    font: {
-                                        size: 9,
-                                        weight: '600'
-                                    },
-                                    formatter: (v) => fmt(v)
-                                },
-                            },
-                            scales: {
-                                x: {
-                                    grid: {
-                                        display: false
-                                    },
-                                    ticks: {
-                                        font: {
-                                            size: 9
-                                        },
-                                        callback: (v) => fmt(v)
-                                    }
-                                },
-                                y: {
-                                    grid: {
-                                        display: false
-                                    },
-                                    ticks: {
-                                        font: {
-                                            size: 9
-                                        }
-                                    }
-                                },
-                            },
-                        },
-                    });
-                }
+                init() {
+                    // Kanvas Chart.js ada DI DALAM kontenHtml (x-html) — pada saat
+                    // init() ini dipanggil Alpine belum sempat menyuntikkan
+                    // markup-nya ke DOM (x-html pada elemen anak diproses setelah
+                    // init() root selesai), jadi tunggu satu tick dulu.
+                    this.$nextTick(() => this.gambarSemuaChart(seed.charts));
+                },
 
-                function donutCenter(canvasId, labels, values, subtext, warna) {
-                    const total = values.reduce((a, b) => a + b, 0);
-                    return new Chart(document.getElementById(canvasId), {
-                        type: 'doughnut',
-                        data: {
-                            labels,
-                            datasets: [{
-                                data: values,
-                                backgroundColor: warna,
-                                borderWidth: 0,
-                                hoverOffset: 4
-                            }],
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            cutout: '68%',
-                            layout: {
-                                padding: 16
-                            },
-                            plugins: {
-                                legend: {
-                                    position: 'bottom',
-                                    labels: {
-                                        boxWidth: 8,
-                                        usePointStyle: true,
-                                        padding: 10,
-                                        font: {
-                                            size: 10
-                                        }
-                                    }
-                                },
-                                tooltip: {
-                                    callbacks: {
-                                        label: window.tooltipPersenLabel(total)
-                                    }
-                                },
-                                centerText: {
-                                    display: true,
-                                    text: fmt(total),
-                                    subtext
-                                },
-                                datalabels: {
-                                    display: true,
-                                    anchor: 'end',
-                                    align: 'end',
-                                    offset: 6,
-                                    color: '#374151',
-                                    font: {
-                                        size: 9,
-                                        weight: '600'
-                                    },
-                                    formatter: (v) => fmt(v)
-                                },
-                            },
-                        },
-                    });
-                }
+                async muat(filter) {
+                    this.loading = true;
 
-                // Wajib X per kelurahan — stacked horizontal bar (Memiliki hijau vs Belum merah muda).
-                function stackedKelurahan(canvasId, data) {
-                    const labels = Object.keys(data);
-                    const memiliki = labels.map((k) => data[k].memiliki ?? 0);
-                    const belum = labels.map((k) => data[k].belum ?? 0);
-                    new Chart(document.getElementById(canvasId), {
-                        type: 'bar',
-                        data: {
-                            labels,
-                            datasets: [{
-                                    label: 'Memiliki',
-                                    data: memiliki,
-                                    backgroundColor: W.positif,
-                                    borderRadius: 3,
-                                    borderSkipped: false
+                    const params = new URLSearchParams();
+                    if (filter.kecamatan) params.set('kecamatan', filter.kecamatan);
+                    if (filter.wilayah_id) params.set('wilayah_id', filter.wilayah_id);
+                    if (filter.waktu_id) params.set('waktu_id', filter.waktu_id);
+
+                    const url = '{{ route('sosial.index') }}' + (params.toString() ? '?' + params.toString() : '');
+                    window.history.pushState({}, '', url);
+
+                    try {
+                        const res = await fetch(url, {
+                            headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                        });
+                        const json = await res.json();
+
+                        this.kontenHtml = json.konten_html;
+                        this.loading = false;
+                        await this.$nextTick();
+                        this.gambarSemuaChart(json.charts);
+                    } catch (e) {
+                        console.error('Gagal memuat data Sosial', e);
+                        this.loading = false;
+                    }
+                },
+
+                gambarSemuaChart(d) {
+                    const fmt = window.formatAngka;
+                    const W = window.DadukColors;
+                    const K = window.DadukKategori;
+
+                    // x-html mengganti SELURUH markup konten (termasuk elemen
+                    // <canvas>) setiap fetch — node lama benar-benar lenyap dari
+                    // DOM, tapi Chart.js tetap menyimpan instance lamanya di
+                    // registry internal (Chart.getChart(id) mencocokkan lewat
+                    // string id, bukan identitas elemen) kalau tidak di-destroy
+                    // dulu. Tanpa ini, filter "Cari kategori" di
+                    // komponen "rincian-indikator" bisa memanipulasi chart HANTU yang
+                    // sudah tidak terlihat, bukan yang baru digambar.
+                    function hancurkanJikaAda(canvasId) {
+                        const lama = window.Chart.getChart(canvasId);
+                        if (lama) lama.destroy();
+                    }
+
+                    function barChart(canvasId, seri, opts = {}) {
+                        const canvas = document.getElementById(canvasId);
+                        if (!canvas) return;
+                        hancurkanJikaAda(canvasId);
+                        const total = seri.values.reduce((a, b) => a + b, 0);
+                        new Chart(canvas, {
+                            type: 'bar',
+                            data: {
+                                labels: seri.labels,
+                                datasets: [{
+                                    data: seri.values,
+                                    backgroundColor: opts.warna ?? seri.labels.map((_, i) => K[i % K.length]),
+                                    borderRadius: 4,
+                                    borderSkipped: false,
+                                }],
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                indexAxis: 'y',
+                                plugins: {
+                                    legend: { display: false },
+                                    tooltip: { callbacks: { label: window.tooltipPersenLabel(total) } },
+                                    datalabels: { display: true, anchor: 'end', align: 'end', clamp: true, color: '#374151', font: { size: 9, weight: '600' }, formatter: (v) => fmt(v) },
                                 },
-                                {
-                                    label: 'Belum',
-                                    data: belum,
-                                    backgroundColor: '#FBCFE8',
-                                    borderRadius: 3,
-                                    borderSkipped: false
+                                scales: {
+                                    x: { grid: { display: false }, ticks: { font: { size: 9 }, callback: (v) => fmt(v) } },
+                                    y: { grid: { display: false }, ticks: { font: { size: 9 } } },
                                 },
-                            ],
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            indexAxis: 'y',
-                            plugins: {
-                                legend: {
-                                    position: 'bottom',
-                                    labels: {
-                                        boxWidth: 10,
-                                        usePointStyle: true,
-                                        font: {
-                                            size: 10
-                                        }
-                                    }
+                            },
+                        });
+                    }
+
+                    function donutCenter(canvasId, seri, subtext, warna) {
+                        const canvas = document.getElementById(canvasId);
+                        if (!canvas) return;
+                        hancurkanJikaAda(canvasId);
+                        const total = seri.values.reduce((a, b) => a + b, 0);
+                        new Chart(canvas, {
+                            type: 'doughnut',
+                            data: { labels: seri.labels, datasets: [{ data: seri.values, backgroundColor: warna, borderWidth: 0, hoverOffset: 4 }] },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                cutout: '68%',
+                                layout: { padding: 16 },
+                                plugins: {
+                                    legend: { position: 'bottom', labels: { boxWidth: 8, usePointStyle: true, padding: 10, font: { size: 10 } } },
+                                    tooltip: { callbacks: { label: window.tooltipPersenLabel(total) } },
+                                    centerText: { display: true, text: fmt(total), subtext },
+                                    datalabels: { display: true, anchor: 'end', align: 'end', offset: 6, color: '#374151', font: { size: 9, weight: '600' }, formatter: (v) => fmt(v) },
                                 },
-                                tooltip: {
-                                    callbacks: {
-                                        label: (c) => {
-                                            const t = memiliki[c.dataIndex] + belum[c.dataIndex];
-                                            return `${c.dataset.label}: ${fmt(c.raw)} (${window.formatPersen(t > 0 ? c.raw / t * 100 : 0)})`;
+                            },
+                        });
+                    }
+
+                    // Wajib X per kelurahan — stacked horizontal bar (Memiliki hijau vs Belum merah muda).
+                    function stackedKelurahan(canvasId, data) {
+                        const canvas = document.getElementById(canvasId);
+                        if (!canvas) return;
+                        hancurkanJikaAda(canvasId);
+                        const labels = Object.keys(data);
+                        const memiliki = labels.map((k) => data[k].memiliki ?? 0);
+                        const belum = labels.map((k) => data[k].belum ?? 0);
+                        new Chart(canvas, {
+                            type: 'bar',
+                            data: {
+                                labels,
+                                datasets: [
+                                    { label: 'Memiliki', data: memiliki, backgroundColor: W.positif, borderRadius: 3, borderSkipped: false },
+                                    { label: 'Belum', data: belum, backgroundColor: '#FBCFE8', borderRadius: 3, borderSkipped: false },
+                                ],
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                indexAxis: 'y',
+                                plugins: {
+                                    legend: { position: 'bottom', labels: { boxWidth: 10, usePointStyle: true, font: { size: 10 } } },
+                                    tooltip: {
+                                        callbacks: {
+                                            label: (c) => {
+                                                const t = memiliki[c.dataIndex] + belum[c.dataIndex];
+                                                return `${c.dataset.label}: ${fmt(c.raw)} (${window.formatPersen(t > 0 ? c.raw / t * 100 : 0)})`;
+                                            },
                                         },
                                     },
                                 },
-                            },
-                            scales: {
-                                x: {
-                                    stacked: true,
-                                    grid: {
-                                        display: false
-                                    },
-                                    ticks: {
-                                        font: {
-                                            size: 9
-                                        },
-                                        callback: (v) => fmt(v)
-                                    }
-                                },
-                                y: {
-                                    stacked: true,
-                                    grid: {
-                                        display: false
-                                    },
-                                    ticks: {
-                                        font: {
-                                            size: 9
-                                        }
-                                    }
+                                scales: {
+                                    x: { stacked: true, grid: { display: false }, ticks: { font: { size: 9 }, callback: (v) => fmt(v) } },
+                                    y: { stacked: true, grid: { display: false }, ticks: { font: { size: 9 } } },
                                 },
                             },
-                        },
-                    });
-                }
+                        });
+                    }
 
-                // ── Pendidikan, Pekerjaan, Usia Sekolah, Agama, KTP, KK, Golongan Darah, SHBKEL ──
-                barChart('chart-edu', @json($pendidikanData->keys()->values()), @json($pendidikanData->values()));
-                barChart('chart-job', @json($pekerjaanData->keys()->values()), @json($pekerjaanData->values()));
-                barChart('chart-usia-sekolah', @json($usiaSekolahData->keys()->values()), @json($usiaSekolahData->values()));
-                barChart('chart-agama', @json($agamaData->keys()->values()), @json($agamaData->values()));
-                barChart('chart-ktp-status', @json($ktpStatusData->keys()->values()), @json($ktpStatusData->values()));
-                barChart('chart-kk-status', @json($kkStatusData->keys()->values()), @json($kkStatusData->values()));
-                barChart('chart-goldar', @json($golonganDarahData->keys()->values()), @json($golonganDarahData->values()));
-                barChart('chart-shbkel', @json($shbkelData->keys()->values()), @json($shbkelData->values()));
+                    // ── Pendidikan, Pekerjaan, Usia Sekolah, Agama, KTP, KK, Golongan Darah, SHBKEL ──
+                    barChart('chart-edu', d.edu);
+                    barChart('chart-job', d.job);
+                    barChart('chart-usia-sekolah', d.usia_sekolah);
+                    barChart('chart-agama', d.agama);
+                    barChart('chart-ktp-status', d.ktp_status);
+                    barChart('chart-kk-status', d.kk_status);
+                    barChart('chart-goldar', d.goldar);
+                    barChart('chart-shbkel', d.shbkel);
 
-                // ── KIA & Akta Lahir — donut Memiliki vs Belum ───────────
-                donutCenter('chart-kia', ['Memiliki KIA', 'Belum Memiliki KIA'],
-                    [@json($kiaData->get('Memiliki KIA', 0)), @json($kiaData->get('Belum Memiliki KIA', 0))],
-                    'anak', [W.positif, '#FBCFE8']);
-                donutCenter('chart-akta-lahir', ['Memiliki', 'Belum Memiliki'],
-                    [@json($aktaLahirData->get('Memiliki Akta Lahir', 0)), @json($aktaLahirData->get('Belum Memiliki Akta Lahir', 0))],
-                    'jiwa', [W.positif, '#FBCFE8']);
+                    // ── KIA & Akta Lahir — donut Memiliki vs Belum ───────────
+                    donutCenter('chart-kia', d.kia, 'anak', [W.positif, '#FBCFE8']);
+                    donutCenter('chart-akta-lahir', d.akta_lahir, 'jiwa', [W.positif, '#FBCFE8']);
 
-                // ── Kepala Keluarga — donut kecil, L/P ───────────────────
-                donutCenter('chart-kk-jk', @json($kepalaKeluargaJkData->keys()->values()), @json($kepalaKeluargaJkData->values()), 'KK', [W.laki,
-                    W.perempuan
-                ]);
+                    // ── Kepala Keluarga — donut kecil, L/P ───────────────────
+                    donutCenter('chart-kk-jk', d.kk_jk, 'KK', [W.laki, W.perempuan]);
 
-                // ── Wajib Akta Lahir / KIA / KTP per Kelurahan ───────────
-                stackedKelurahan('chart-akta-lahir-kelurahan', @json($aktaLahirKelurahanData));
-                stackedKelurahan('chart-kia-kelurahan', @json($kiaKelurahanData));
-                stackedKelurahan('chart-ktp-kelurahan', @json($ktpKelurahanData));
-            });
-        </script>
+                    // ── Wajib Akta Lahir / KIA / KTP per Kelurahan ───────────
+                    stackedKelurahan('chart-akta-lahir-kelurahan', d.akta_lahir_kelurahan);
+                    stackedKelurahan('chart-kia-kelurahan', d.kia_kelurahan);
+                    stackedKelurahan('chart-ktp-kelurahan', d.ktp_kelurahan);
+                },
+            };
+        }
+    </script>
     </x-slot:scripts>
 
 </x-layouts.public>

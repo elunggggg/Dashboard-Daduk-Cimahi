@@ -10,6 +10,7 @@ use App\Models\DimWaktu;
 use App\Models\ImportExcel;
 use App\Models\KonfigurasiImport;
 use App\Services\AuditLogService;
+use App\Services\DashboardCacheService;
 use App\Services\Import\PembacaSheetDkb;
 use App\Services\Import\PenyimpanDataAgregat;
 use Illuminate\Http\RedirectResponse;
@@ -42,6 +43,7 @@ class ImportController extends Controller
     public function __construct(
         private readonly AuditLogService $audit,
         private readonly PenyimpanDataAgregat $penyimpan,
+        private readonly DashboardCacheService $cache,
     ) {
     }
 
@@ -255,6 +257,10 @@ class ImportController extends Controller
             return ['jumlah' => $jumlah, 'periode_dibuang' => $periodeDibuang];
         });
 
+        // Data_agregat berubah (baris terhapus) — cache dashboard yang lama
+        // harus dianggap basi, sama seperti setelah import berhasil.
+        $this->cache->flush();
+
         $pesan = "{$ringkas['jumlah']} baris data dari berkas {$import->nama_file} sudah dihapus.";
 
         if ($ringkas['periode_dibuang'] !== []) {
@@ -382,6 +388,10 @@ class ImportController extends Controller
             'baru'        => $import->jumlahBaru,
             'diperbarui'  => $import->jumlahDiperbarui,
         ]);
+
+        // Mode B menulis data_agregat lewat DataAgregatImport::simpan(), bukan
+        // PenyimpanDataAgregat — flush cache di sini juga (sama seperti Mode A).
+        $this->cache->flush();
 
         return redirect()
             ->route('petugas.import.index')

@@ -7,6 +7,7 @@ use App\Models\DimKategori;
 use App\Models\DimWaktu;
 use App\Models\ImportExcel;
 use App\Services\AuditLogService;
+use App\Services\DashboardCacheService;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
@@ -30,8 +31,10 @@ class PenyimpanDataAgregat
     /** Batas jumlah perubahan yang dirinci di audit log. */
     private const MAKS_RINCIAN_AUDIT = 200;
 
-    public function __construct(private readonly AuditLogService $audit)
-    {
+    public function __construct(
+        private readonly AuditLogService $audit,
+        private readonly DashboardCacheService $cache,
+    ) {
     }
 
     /**
@@ -113,7 +116,7 @@ class PenyimpanDataAgregat
             throw new RuntimeException('Import ditolak: tidak ada satu pun baris yang bisa disimpan.');
         }
 
-        return DB::transaction(function () use ($baris, $hasil, $import, $modeDuplikat) {
+        $ringkas = DB::transaction(function () use ($baris, $hasil, $import, $modeDuplikat) {
             $userId = auth()->id();
 
             // Periode dibuat di sini, bukan lewat migrasi: menambah semester baru
@@ -224,6 +227,13 @@ class PenyimpanDataAgregat
 
             return ['baru' => $baru, 'diperbarui' => $diperbarui, 'dilewati' => $dilewati];
         });
+
+        // Di LUAR transaction — hanya jalan kalau transaksinya benar-benar commit
+        // (kalau ada exception di atas, baris ini tidak pernah tercapai, cache
+        // lama tetap valid). Lihat DashboardCacheService untuk skema versinya.
+        $this->cache->flush();
+
+        return $ringkas;
     }
 
     /**

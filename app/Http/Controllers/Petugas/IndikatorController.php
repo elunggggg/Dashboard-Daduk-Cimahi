@@ -10,6 +10,7 @@ use App\Models\DimWaktu;
 use App\Models\DimWilayah;
 use App\Models\Metadata;
 use App\Services\AuditLogService;
+use App\Services\DashboardCacheService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -24,8 +25,10 @@ use Illuminate\View\View;
  */
 class IndikatorController extends Controller
 {
-    public function __construct(private readonly AuditLogService $audit)
-    {
+    public function __construct(
+        private readonly AuditLogService $audit,
+        private readonly DashboardCacheService $cache,
+    ) {
     }
 
     public function index(Request $request): View
@@ -66,6 +69,7 @@ class IndikatorController extends Controller
         $indikator = DimKategori::create($request->validated());
 
         $this->audit->created($indikator);
+        $this->cache->flush();
 
         return redirect()
             ->route('petugas.indikator.index')
@@ -87,6 +91,9 @@ class IndikatorController extends Controller
         $indikator->save();
 
         $this->audit->updated($indikator, $sebelum);
+        // Toggle aktif/nonaktif mengubah apa yang muncul di seluruh agregasi
+        // dashboard (scope ->aktif() dipakai di mana-mana) — flush juga di sini.
+        $this->cache->flush();
 
         return redirect()
             ->route('petugas.indikator.index')
@@ -106,6 +113,7 @@ class IndikatorController extends Controller
         $this->audit->deleted($indikator);
         $label = $indikator->label;
         $indikator->delete();
+        $this->cache->flush();
 
         return redirect()
             ->route('petugas.indikator.index')
@@ -129,7 +137,18 @@ class IndikatorController extends Controller
         $wilayahList = DimWilayah::orderByDesc('is_kota')->orderByDesc('is_kecamatan')->orderBy('nama_kelurahan')->get(['id', 'nama_kelurahan', 'is_kota', 'is_kecamatan']);
         $waktuList   = DimWaktu::orderByDesc('tahun')->orderByDesc('semester')->get(['id', 'label']);
 
-        return view('petugas.indikator.data', compact('indikator', 'data', 'wilayahList', 'waktuList'));
+        // Chart per kelurahan, dikelompokkan per periode (bukan digabung) —
+        // sengaja HANYA kelurahan asli (bukan baris rekap kota/kecamatan),
+        // supaya satu bar konsisten mewakili satu kelurahan seperti chart
+        // lain di aplikasi ini. Dikirim sebagai {periode: {kelurahan: jumlah}}
+        // supaya dropdown periode di Blade bisa mengganti chart client-side
+        // tanpa reload, pola yang sama dengan "Cari periode" di Mobilitas.
+        $chartPerPeriode = $data
+            ->filter(fn (DataAgregat $d) => $d->wilayah && ! $d->wilayah->is_kota && ! $d->wilayah->is_kecamatan)
+            ->groupBy(fn (DataAgregat $d) => $d->waktu->label ?? '—')
+            ->map(fn ($rows) => $rows->sortByDesc('jumlah')->pluck('jumlah', 'wilayah.nama_kelurahan'));
+
+        return view('petugas.indikator.data', compact('indikator', 'data', 'wilayahList', 'waktuList', 'chartPerPeriode'));
     }
 
     public function dataStore(Request $request, DimKategori $indikator): RedirectResponse
@@ -178,6 +197,8 @@ class IndikatorController extends Controller
             $pesan = "Nilai {$indikator->label} untuk {$wilayah->nama_kelurahan} / {$waktu->label} "
                 ."berhasil ditambahkan secara manual: {$validated['jumlah']}.";
         }
+
+        $this->cache->flush();
 
         return redirect()
             ->route('petugas.indikator.data', $indikator)

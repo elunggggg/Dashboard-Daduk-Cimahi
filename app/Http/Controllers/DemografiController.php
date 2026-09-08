@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\DataAgregat;
 use App\Models\DimWilayah;
 use App\Services\FilterWilayahService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\View\View;
@@ -20,7 +21,7 @@ class DemografiController extends Controller
 
     public function __construct(private FilterWilayahService $filter) {}
 
-    public function __invoke(Request $request): View
+    public function __invoke(Request $request): View|JsonResponse
     {
         $latestWaktu  = $this->filter->getLatestWaktu();
         $waktuList    = $this->filter->getWaktuList();
@@ -266,6 +267,50 @@ class DemografiController extends Controller
         ], $waktuId);
 
         $selectedWaktu = $waktuList->firstWhere('id', $waktuId);
+
+        // Variabel yang dipakai demografi/_konten.blade.php — dipisah dari
+        // variabel filter (waktuList, kecamatanList, dst) supaya bisa dipakai
+        // ulang oleh kunjungan HTML biasa MAUPUN cabang JSON di bawah (Phase 5,
+        // filter tanpa reload) tanpa menulis daftar variabel dua kali.
+        $kontenVars = [
+            'totalPenduduk' => $totalPenduduk, 'laki' => $laki, 'perempuan' => $perempuan,
+            'rasio' => $rasio, 'kepadatan' => $kepadatan, 'umurMedian' => $umurMedian,
+            'lpp' => $lpp, 'totalWna' => $totalWna, 'selectedWaktu' => $selectedWaktu,
+            'genderData' => $genderData, 'anakData' => $anakData, 'lansiaData' => $lansiaData,
+            'maritalData' => $maritalData, 'disabilData' => $disabilData,
+            'pctDisabilitas' => $pctDisabilitas, 'totalDisabilitas' => $totalDisabilitas, 'nonDisabilitas' => $nonDisabilitas,
+            'ageData' => $ageData, 'produktif' => $produktif, 'usiaMuda' => $usiaMuda, 'usiaTua' => $usiaTua,
+            'rasioKetergantungan' => $rasioKetergantungan, 'umurTunggalData' => $umurTunggalData,
+            'usia0' => $usia0, 'cbr' => $cbr, 'gfr' => $gfr, 'tfr' => $tfr, 'asfrData' => $asfrData,
+            'perkawinanKuData' => $perkawinanKuData, 'perkawinanKuJenis' => $perkawinanKuJenis,
+            'disabilitasKuData' => $disabilitasKuData, 'golDarKuData' => $golDarKuData,
+            'disabilitasPekerjaanData' => $disabilitasPekerjaanData, 'disabilitasUsklhData' => $disabilitasUsklhData,
+        ];
+
+        if ($request->ajax() || $request->wantsJson()) {
+            $seri = fn (Collection $d) => ['labels' => $d->keys()->values(), 'values' => $d->values()];
+
+            return response()->json([
+                'waktu_id' => $waktuId, 'wilayah_id' => $wilayahId, 'kecamatan' => $kecamatan,
+                'konten_html' => (string) view('demografi._konten', $kontenVars)->render(),
+                // Data mentah untuk 6 kanvas Chart.js — redraw-nya di JS
+                // (gambarSemuaChart()), BUKAN lewat <script> di dalam
+                // konten_html (browser tidak menjalankan <script> hasil x-html).
+                'charts' => [
+                    'gender'   => $seri($genderData),
+                    'anak'     => $seri($anakData),
+                    'lansia'   => $seri($lansiaData),
+                    'marital'  => $seri($maritalData),
+                    'disab'    => $seri($disabilData),
+                    'piramida' => [
+                        'labels'    => $ageLakiData->keys()->values(),
+                        'laki'      => $ageLakiData->values(),
+                        'perempuan' => $agePerempuanData->values(),
+                    ],
+                    'total_penduduk' => $totalPenduduk,
+                ],
+            ]);
+        }
 
         return view('demografi.index', compact(
             'genderData', 'ageData', 'maritalData', 'disabilData',

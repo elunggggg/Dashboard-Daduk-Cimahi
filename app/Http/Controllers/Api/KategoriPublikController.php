@@ -5,9 +5,12 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\DataAgregat;
 use App\Models\DimWaktu;
+use App\Services\DashboardCacheService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 
 /**
@@ -38,13 +41,24 @@ class KategoriPublikController extends Controller
         'mobilitas_pindah' => 'Mobilitas Pindah',
     ];
 
-    public function __invoke(Request $request): JsonResponse
+    public function __invoke(Request $request, DashboardCacheService $cache): JsonResponse
     {
-        $validated = $request->validate([
+        // Validasi ditangani manual (bukan $request->validate() langsung) supaya
+        // kegagalan validasi SELALU membalas JSON 422 — endpoint ini dipanggil
+        // lewat fetch() polos tanpa header "Accept: application/json", jadi
+        // Laravel->expectsJson() bisa false dan otomatis redirect 302 (HTML)
+        // yang bikin res.json() di Alpine gagal parse diam-diam.
+        $validator = Validator::make($request->all(), [
             'jenis_indikator' => ['required', 'string', Rule::in(array_keys(self::INDIKATOR_LIST))],
             'waktu_id_1'      => ['nullable', 'integer', 'exists:dim_waktu,id'],
             'waktu_id_2'      => ['nullable', 'integer', 'exists:dim_waktu,id'],
         ]);
+
+        if ($validator->fails()) {
+            return response()->json(['message' => 'Parameter tidak valid.', 'errors' => $validator->errors()], 422);
+        }
+
+        $validated = $validator->validated();
 
         $allWaktu  = DimWaktu::query()->orderBy('tahun')->orderBy('semester')->get();
 
@@ -59,18 +73,27 @@ class KategoriPublikController extends Controller
             return response()->json(['labels' => [], 'nilai1' => [], 'nilai2' => [], 'periode1' => null, 'periode2' => null]);
         }
 
-        $data1 = $this->aggr($validated['jenis_indikator'], $waktuId1);
-        $data2 = $this->aggr($validated['jenis_indikator'], $waktuId2);
+        // Sama pola dengan Api\DashboardDataController — key cache menyertakan
+        // versi dari DashboardCacheService supaya otomatis basi begitu import
+        // berhasil, tanpa perlu tahu/menghapus key satu per satu.
+        $cacheKey = $cache->key('api-kategori', [$validated['jenis_indikator'], $waktuId1, $waktuId2]);
 
-        $labels = $data1->keys()->merge($data2->keys())->unique()->values();
+        $payload = Cache::remember($cacheKey, DashboardCacheService::TTL_DETIK, function () use ($validated, $waktuId1, $waktuId2, $allWaktu) {
+            $data1 = $this->aggr($validated['jenis_indikator'], $waktuId1);
+            $data2 = $this->aggr($validated['jenis_indikator'], $waktuId2);
 
-        return response()->json([
-            'labels'   => $labels,
-            'nilai1'   => $labels->map(fn ($l) => $data1->get($l, 0))->values(),
-            'nilai2'   => $labels->map(fn ($l) => $data2->get($l, 0))->values(),
-            'periode1' => $allWaktu->firstWhere('id', $waktuId1)?->label,
-            'periode2' => $allWaktu->firstWhere('id', $waktuId2)?->label,
-        ]);
+            $labels = $data1->keys()->merge($data2->keys())->unique()->values();
+
+            return [
+                'labels'   => $labels,
+                'nilai1'   => $labels->map(fn ($l) => $data1->get($l, 0))->values(),
+                'nilai2'   => $labels->map(fn ($l) => $data2->get($l, 0))->values(),
+                'periode1' => $allWaktu->firstWhere('id', $waktuId1)?->label,
+                'periode2' => $allWaktu->firstWhere('id', $waktuId2)?->label,
+            ];
+        });
+
+        return response()->json($payload);
     }
 
     private function aggr(string $jenis, int $waktuId): Collection
