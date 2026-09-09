@@ -14,34 +14,15 @@
         </div>
     </div>
 
-    {{-- ── Phase 5: filter tanpa reload ──
-         <x-filter-wilayah> cuma memancarkan event `filter-berubah` (lihat
-         komponennya) — sosialApp() di bawah yang mendengarkan lalu fetch()
-         ke route yang sama. Konten di bawah filter dirender server (partial
-         sosial/_konten.blade.php) dan diganti utuh lewat x-html; 14 kanvas
-         Chart.js-nya di-redraw terpisah oleh gambarSemuaChart(), dibaca dari
-         kunci `charts` pada respons JSON. --}}
+    {{-- Konten (KPI, tabel, progress bar) dirender langsung oleh server lewat
+         partial sosial/_konten.blade.php — lihat @include di bawah — jadi data
+         selalu tampil meski JS mati. <x-filter-wilayah> memancarkan event
+         `filter-berubah`; sosialApp() menangkapnya lalu reload halaman dengan
+         query param. 14 kanvas Chart.js digambar gambarSemuaChart() dari kunci
+         `charts` pada seed x-data. --}}
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6"
          x-data="sosialApp({
              waktu_id: @js($waktuId), wilayah_id: @js($wilayahId), kecamatan: @js($kecamatan),
-             konten_html: @js((string) view('sosial._konten', [
-                 'totalPenduduk' => $totalPenduduk, 'selectedWaktu' => $selectedWaktu,
-                 'pendidikanData' => $pendidikanData, 'pekerjaanData' => $pekerjaanData,
-                 'jenisPekerjaanData' => $jenisPekerjaanData, 'usiaSekolahData' => $usiaSekolahData,
-                 'agamaData' => $agamaData, 'ktpData' => $ktpData, 'kkData' => $kkData, 'kiaData' => $kiaData,
-                 'aktaLahirData' => $aktaLahirData, 'aktaKawinData' => $aktaKawinData,
-                 'golonganDarahData' => $golonganDarahData, 'ktpStatusData' => $ktpStatusData, 'kkStatusData' => $kkStatusData,
-                 'kepalaKeluargaJkData' => $kepalaKeluargaJkData, 'aktaLahir05Data' => $aktaLahir05Data, 'aktaLahir017Data' => $aktaLahir017Data,
-                 'shbkelData' => $shbkelData, 'angkatanKerjaData' => $angkatanKerjaData, 'pctTpak' => $pctTpak,
-                 'akPendidikanData' => $akPendidikanData,
-                 'kkStatusKawinData' => $kkStatusKawinData, 'kkKelPekerjaanData' => $kkKelPekerjaanData,
-                 'kkAgamaData' => $kkAgamaData, 'kkPendidikanData' => $kkPendidikanData,
-                 'agamaKuData' => $agamaKuData, 'kkKawinKuData' => $kkKawinKuData, 'kkPekerjaanData' => $kkPekerjaanData,
-                 'pctKtp' => $pctKtp, 'pctKK' => $pctKK, 'pctKia' => $pctKia,
-                 'pctAktaLahir' => $pctAktaLahir, 'pctAktaKawin' => $pctAktaKawin,
-                 'pctAktaLahir05' => $pctAktaLahir05, 'pctAktaLahir017' => $pctAktaLahir017,
-                 'terbitTahunan' => $terbitTahunan,
-             ])->render()),
              charts: {
                  edu: { labels: @json($pendidikanData->keys()->values()), values: @json($pendidikanData->values()) },
                  job: { labels: @json($pekerjaanData->keys()->values()), values: @json($pekerjaanData->values()) },
@@ -72,14 +53,12 @@
             :waktuId="$waktuId"
         />
 
-        <div x-show="loading" class="space-y-6">
-            <x-skeleton-card :rows="4" />
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-                <x-skeleton-card :rows="3" /><x-skeleton-card :rows="3" />
-            </div>
+        {{-- Konten dirender LANGSUNG di server (bukan lewat x-html) supaya data
+             selalu tampil walau Alpine/JS gagal dimuat. Filter di atas tetap
+             berfungsi lewat reload halaman biasa (lihat muat() di bawah). --}}
+        <div class="space-y-6">
+            @include('sosial._konten')
         </div>
-
-        <div x-show="!loading" x-cloak x-html="kontenHtml" class="space-y-6"></div>
 
     </div>
 
@@ -93,41 +72,25 @@
         function sosialApp(seed) {
             return {
                 loading: false,
-                kontenHtml: seed.konten_html,
 
                 init() {
-                    // Kanvas Chart.js ada DI DALAM kontenHtml (x-html) — pada saat
-                    // init() ini dipanggil Alpine belum sempat menyuntikkan
-                    // markup-nya ke DOM (x-html pada elemen anak diproses setelah
-                    // init() root selesai), jadi tunggu satu tick dulu.
+                    // Kanvas Chart.js ada di dalam partial sosial/_konten yang
+                    // sudah dirender server — tunggu satu tick supaya elemennya
+                    // pasti sudah ada di DOM sebelum digambar.
                     this.$nextTick(() => this.gambarSemuaChart(seed.charts));
                 },
 
-                async muat(filter) {
+                // Filter "Tampilkan"/"Reset" memancarkan `filter-berubah`; di sini
+                // cukup reload halaman dengan query param — konten & chart ikut
+                // dirender ulang oleh server. Sederhana dan tahan banting.
+                muat(filter) {
                     this.loading = true;
-
                     const params = new URLSearchParams();
                     if (filter.kecamatan) params.set('kecamatan', filter.kecamatan);
                     if (filter.wilayah_id) params.set('wilayah_id', filter.wilayah_id);
                     if (filter.waktu_id) params.set('waktu_id', filter.waktu_id);
-
-                    const url = '{{ route('sosial.index') }}' + (params.toString() ? '?' + params.toString() : '');
-                    window.history.pushState({}, '', url);
-
-                    try {
-                        const res = await fetch(url, {
-                            headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-                        });
-                        const json = await res.json();
-
-                        this.kontenHtml = json.konten_html;
-                        this.loading = false;
-                        await this.$nextTick();
-                        this.gambarSemuaChart(json.charts);
-                    } catch (e) {
-                        console.error('Gagal memuat data Sosial', e);
-                        this.loading = false;
-                    }
+                    const qs = params.toString();
+                    window.location = '{{ route('sosial.index') }}' + (qs ? '?' + qs : '');
                 },
 
                 gambarSemuaChart(d) {
