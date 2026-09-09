@@ -29,6 +29,10 @@
              'periode_label' => $selectedWaktu->label ?? ($waktuId === null ? 'Semua Periode' : '-'),
          ], 'datang' => ['labels' => $datangData->keys()->values(), 'values' => $datangData->values(), 'total' => $totalDatang],
             'pindah' => ['labels' => $pindahData->keys()->values(), 'values' => $pindahData->values(), 'total' => $totalPindah],
+            'rincian_html' => [
+                'datang' => (string) view('components.rincian-indikator', ['data' => $datangData, 'total' => $totalDatang, 'chartId' => 'chart-datang'])->render(),
+                'pindah' => (string) view('components.rincian-indikator', ['data' => $pindahData, 'total' => $totalPindah, 'chartId' => 'chart-pindah'])->render(),
+            ],
          ]))"
     >
 

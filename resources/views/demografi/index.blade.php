@@ -41,17 +41,17 @@
                  'disabilitasPekerjaanData' => $disabilitasPekerjaanData, 'disabilitasUsklhData' => $disabilitasUsklhData,
              ])->render()),
              charts: {
-                 gender:  { labels: @json($genderData->keys()->values()), values: @json($genderData->values()) },
-                 anak:    { labels: @json($anakData->keys()->values()), values: @json($anakData->values()) },
-                 lansia:  { labels: @json($lansiaData->keys()->values()), values: @json($lansiaData->values()) },
-                 marital: { labels: @json($maritalData->keys()->values()), values: @json($maritalData->values()) },
-                 disab:   { labels: @json($disabilData->keys()->values()), values: @json($disabilData->values()) },
+                 gender:  { labels: @js($genderData->keys()->values()), values: @js($genderData->values()) },
+                 anak:    { labels: @js($anakData->keys()->values()), values: @js($anakData->values()) },
+                 lansia:  { labels: @js($lansiaData->keys()->values()), values: @js($lansiaData->values()) },
+                 marital: { labels: @js($maritalData->keys()->values()), values: @js($maritalData->values()) },
+                 disab:   { labels: @js($disabilData->keys()->values()), values: @js($disabilData->values()) },
                  piramida: {
-                     labels: @json($ageLakiData->keys()->values()),
-                     laki: @json($ageLakiData->values()),
-                     perempuan: @json($agePerempuanData->values()),
+                     labels: @js($ageLakiData->keys()->values()),
+                     laki: @js($ageLakiData->values()),
+                     perempuan: @js($agePerempuanData->values()),
                  },
-                 total_penduduk: @json($totalPenduduk),
+                 total_penduduk: @js($totalPenduduk),
              },
          })"
          @filter-berubah.window="muat($event.detail)"

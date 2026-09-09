@@ -2,8 +2,8 @@
      Filter di sini BUKAN cuma menyaring tabel — lewat `chartId` (opsional,
      wajib diisi kalau ada canvas Chart.js untuk indikator ini) chart-nya
      SENDIRI juga diperbarui untuk hanya menampilkan kategori yang dipilih
-     (Chart.getChart()). Tabel default tersembunyi, muncul saat "Lihat Tabel"
-     diklik. --}}
+     (Chart.getChart()). Tabel default TERBUKA; tombol "Lihat Tabel" tetap
+     berfungsi untuk menutup/membuka kembali. --}}
 @props(['data', 'total' => null, 'satuan' => 'jiwa', 'chartId' => null])
 @php
     $rows = collect($data)->map(fn ($v, $k) => ['label' => (string) $k, 'jumlah' => (int) $v])->values();
@@ -12,7 +12,7 @@
     <div
         x-data="{
             pilih: '',
-            tabelOpen: false,
+            tabelOpen: true,
             labelsAsli: @js($rows->pluck('label')),
             nilaiAsli: @js($rows->pluck('jumlah')),
             terapkanKeChart() {

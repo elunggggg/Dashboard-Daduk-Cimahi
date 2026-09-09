@@ -39,6 +39,6 @@ class AuthenticatedSessionController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect()->route('dashboard-publik');
+        return redirect()->route('dashboard.publik');
     }
 }
