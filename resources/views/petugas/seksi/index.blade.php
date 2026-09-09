@@ -3,22 +3,41 @@
     <div class="max-w-4xl space-y-5">
 
         <div class="card p-4 bg-brand-50/40 border-brand-100 text-sm text-gray-600">
-            <p class="flex items-start gap-2">
+            <p class="flex items-start gap-2 mb-2">
                 <i class="bi bi-info-circle-fill text-brand-600 mt-0.5"></i>
-                <span>
-                    Atur tiap grafik/tabel di halaman publik: <strong class="text-gray-800">tampil/sembunyi</strong>,
-                    <strong class="text-gray-800">pindah halaman</strong> (Demografi &harr; Sosial),
-                    <strong class="text-gray-800">urutan</strong>, dan <strong class="text-gray-800">lebar</strong>
-                    (sepertiga / separuh / penuh). Halaman publik memakai grid cair &mdash; menyembunyikan,
-                    memindah, atau mengecilkan satu bagian membuat sisanya otomatis mengalir mengisi ruang.
-                    Bagian yang belum muncul di daftar: buka dulu halaman
-                    <a href="{{ route('demografi.index') }}" target="_blank" class="text-brand-700 underline">Demografi</a> /
-                    <a href="{{ route('sosial.index') }}" target="_blank" class="text-brand-700 underline">Sosial</a> /
-                    <a href="{{ route('mobilitas.index') }}" target="_blank" class="text-brand-700 underline">Mobilitas</a>,
-                    lalu segarkan halaman ini. Bagian <strong>Mobilitas</strong> hanya bisa disembunyikan/diurutkan
-                    (halaman itu memakai tata letak sendiri, tidak bisa jadi tujuan pindah).
-                </span>
+                <span>Setiap perubahan langsung tersimpan (tidak ada tombol "Simpan").</span>
             </p>
+            <ul class="list-disc list-inside space-y-1 pl-1">
+                <li><i class="bi bi-eye"></i> / <i class="bi bi-eye-slash"></i> &mdash; tampilkan / sembunyikan bagian dari halaman publik.</li>
+                <li><strong>Halaman</strong> &mdash; pindahkan bagian antara <em>Demografi</em> dan <em>Sosial</em>.</li>
+                <li><i class="bi bi-arrow-up"></i> <i class="bi bi-arrow-down"></i> &mdash; geser posisi bagian naik / turun di halamannya.</li>
+                <li><strong>Lebar</strong> &mdash; berapa bagian per baris: <em>Sepertiga</em> = 3 per baris, <em>Separuh</em> = 2 per baris, <em>Penuh</em> = melebar 1 baris sendiri. Kalau ada bagian yang disembunyikan, sisa bagian di baris itu otomatis melebar mengisi ruang.</li>
+            </ul>
+            <p class="mt-2 text-xs text-gray-500">
+                Bagian <strong>Mobilitas</strong> hanya bisa disembunyikan &amp; digeser urutannya (halaman itu punya tata letak sendiri).
+                Daftar belum lengkap? Buka dulu halaman
+                <a href="{{ route('demografi.index') }}" target="_blank" class="text-brand-700 underline">Demografi</a> /
+                <a href="{{ route('sosial.index') }}" target="_blank" class="text-brand-700 underline">Sosial</a> /
+                <a href="{{ route('mobilitas.index') }}" target="_blank" class="text-brand-700 underline">Mobilitas</a>, lalu segarkan halaman ini.
+            </p>
+        </div>
+
+        <div class="flex justify-end">
+            <x-konfirmasi
+                :action="route('petugas.seksi.reset')"
+                method="POST"
+                varian="peringatan"
+                judul="Reset semua pengaturan bagian?"
+                pesan="Seluruh pengaturan tampil/sembunyi, halaman, urutan, dan lebar dikembalikan ke keadaan awal (sesuai bawaan aplikasi). Tidak bisa dibatalkan."
+                tombol="Ya, Reset ke Awal"
+                ikon="bi-arrow-counterclockwise"
+                pemicu="Reset ke Awal"
+                judul-pemicu="Kembalikan semua bagian ke keadaan awal"
+                kelas="btn-secondary text-sm">
+                <p class="text-xs text-gray-500">
+                    Daftar bagian akan terbentuk ulang otomatis saat halaman Demografi / Sosial / Mobilitas dibuka lagi.
+                </p>
+            </x-konfirmasi>
         </div>
 
         @if ($seksiPerHalaman->isEmpty())
@@ -27,85 +46,91 @@
                 Belum ada bagian yang tercatat. Buka salah satu halaman publik dulu, lalu kembali ke sini.
             </div>
         @else
-            <form method="POST" action="{{ route('petugas.seksi.update') }}" class="space-y-5">
-                @csrf
-                @method('PUT')
+            @php $lebarLabel = ['sepertiga' => 'Sepertiga (3/baris)', 'separuh' => 'Separuh (2/baris)', 'penuh' => 'Penuh (1/baris)']; @endphp
 
-                @foreach ($seksiPerHalaman as $halaman => $daftar)
-                    @php $bisaPindah = in_array($halaman, ['demografi', 'sosial'], true); @endphp
-                    <div class="card overflow-hidden">
-                        <div class="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
-                            <h2 class="text-sm font-bold text-gray-900">
-                                {{ \App\Models\SeksiDashboard::LABEL_HALAMAN[$halaman] ?? ucfirst($halaman) }}
-                            </h2>
-                            <span class="text-xs text-gray-400">
-                                {{ $daftar->where('tampil', true)->count() }} / {{ $daftar->count() }} tampil
-                            </span>
-                        </div>
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-sm">
-                                <thead>
-                                    <tr class="text-left text-[11px] text-gray-400 uppercase tracking-wide bg-gray-50 border-b border-gray-100">
-                                        <th class="px-3 py-2 font-semibold">Tampil</th>
-                                        <th class="px-3 py-2 font-semibold">Bagian</th>
-                                        <th class="px-3 py-2 font-semibold">Halaman</th>
-                                        <th class="px-3 py-2 font-semibold text-center">Urutan</th>
-                                        <th class="px-3 py-2 font-semibold">Lebar</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="divide-y divide-gray-50">
-                                    @foreach ($daftar as $seksi)
-                                        <tr class="{{ $seksi->tampil ? '' : 'bg-gray-50/60' }}">
-                                            <td class="px-3 py-2">
-                                                <input type="checkbox" name="tampil[]" value="{{ $seksi->id }}"
-                                                       class="rounded border-gray-300 text-brand-600 focus:ring-brand-500"
-                                                       @checked($seksi->tampil)>
-                                            </td>
-                                            <td class="px-3 py-2 {{ $seksi->tampil ? 'text-gray-900' : 'text-gray-400 line-through' }}">
-                                                {{ $seksi->judul }}
-                                                <code class="block text-[10px] text-gray-300 font-mono">{{ $seksi->kunci }}</code>
-                                            </td>
-                                            <td class="px-3 py-2">
-                                                @if ($bisaPindah)
-                                                    <select name="halaman[{{ $seksi->id }}]" class="form-select text-xs py-1 w-auto">
-                                                        <option value="demografi" @selected($seksi->halaman === 'demografi')>Demografi</option>
-                                                        <option value="sosial" @selected($seksi->halaman === 'sosial')>Sosial</option>
-                                                    </select>
-                                                @else
-                                                    <span class="text-xs text-gray-400">Mobilitas</span>
-                                                @endif
-                                            </td>
-                                            <td class="px-3 py-2 text-center">
-                                                <input type="number" name="urutan[{{ $seksi->id }}]" value="{{ $seksi->urutan }}"
-                                                       min="0" max="9999"
-                                                       class="form-input text-xs py-1 w-16 text-center">
-                                            </td>
-                                            <td class="px-3 py-2">
-                                                @if ($bisaPindah)
-                                                    <select name="lebar[{{ $seksi->id }}]" class="form-select text-xs py-1 w-auto">
-                                                        <option value="sepertiga" @selected($seksi->lebar === 'sepertiga')>Sepertiga</option>
-                                                        <option value="separuh" @selected($seksi->lebar === 'separuh')>Separuh</option>
-                                                        <option value="penuh" @selected($seksi->lebar === 'penuh')>Penuh</option>
-                                                    </select>
-                                                @else
-                                                    <span class="text-xs text-gray-300">&mdash;</span>
-                                                @endif
-                                            </td>
-                                        </tr>
-                                    @endforeach
-                                </tbody>
-                            </table>
-                        </div>
+            @foreach ($seksiPerHalaman as $halaman => $daftar)
+                @php $bisaPindah = in_array($halaman, ['demografi', 'sosial'], true); @endphp
+                <div class="card overflow-hidden">
+                    <div class="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+                        <h2 class="text-sm font-bold text-gray-900">
+                            {{ \App\Models\SeksiDashboard::LABEL_HALAMAN[$halaman] ?? ucfirst($halaman) }}
+                        </h2>
+                        <span class="text-xs text-gray-400">
+                            {{ $daftar->where('tampil', true)->count() }} / {{ $daftar->count() }} tampil
+                        </span>
                     </div>
-                @endforeach
+                    <div class="divide-y divide-gray-50">
+                        @foreach ($daftar as $i => $seksi)
+                            <div class="flex items-center gap-3 px-4 py-2.5 {{ $seksi->tampil ? '' : 'bg-gray-50/60' }}">
 
-                <div class="flex items-center gap-2 pt-1">
-                    <button type="submit" class="btn-primary"><i class="bi bi-check-lg"></i> Simpan Perubahan</button>
-                    <a href="{{ route('dashboard.publik') }}" target="_blank" class="btn-secondary">
-                        <i class="bi bi-box-arrow-up-right"></i> Lihat Dashboard Publik
-                    </a>
+                                {{-- Tampil / sembunyi --}}
+                                <form method="POST" action="{{ route('petugas.seksi.atur', $seksi) }}">
+                                    @csrf @method('PATCH')
+                                    <button type="submit" name="tampil" value="{{ $seksi->tampil ? 0 : 1 }}"
+                                            class="p-1.5 rounded-lg {{ $seksi->tampil ? 'text-green-600 hover:bg-green-50' : 'text-gray-400 hover:bg-gray-100' }}"
+                                            title="{{ $seksi->tampil ? 'Sembunyikan' : 'Tampilkan' }}">
+                                        <i class="bi {{ $seksi->tampil ? 'bi-eye-fill' : 'bi-eye-slash' }}"></i>
+                                    </button>
+                                </form>
+
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm {{ $seksi->tampil ? 'text-gray-900' : 'text-gray-400 line-through' }} truncate">{{ $seksi->judul }}</p>
+                                    <code class="text-[10px] text-gray-300 font-mono">{{ $seksi->kunci }}</code>
+                                </div>
+
+                                {{-- Pindah halaman --}}
+                                @if ($bisaPindah)
+                                    <form method="POST" action="{{ route('petugas.seksi.atur', $seksi) }}">
+                                        @csrf @method('PATCH')
+                                        <select name="halaman" onchange="this.form.submit()" class="form-select text-xs py-1 w-auto">
+                                            <option value="demografi" @selected($seksi->halaman === 'demografi')>Demografi</option>
+                                            <option value="sosial" @selected($seksi->halaman === 'sosial')>Sosial</option>
+                                        </select>
+                                    </form>
+                                @endif
+
+                                {{-- Geser urutan --}}
+                                <div class="flex items-center">
+                                    <form method="POST" action="{{ route('petugas.seksi.atur', $seksi) }}">
+                                        @csrf @method('PATCH')
+                                        <button type="submit" name="arah" value="naik" @disabled($i === 0)
+                                                class="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed" title="Naik">
+                                            <i class="bi bi-arrow-up"></i>
+                                        </button>
+                                    </form>
+                                    <form method="POST" action="{{ route('petugas.seksi.atur', $seksi) }}">
+                                        @csrf @method('PATCH')
+                                        <button type="submit" name="arah" value="turun" @disabled($i === $daftar->count() - 1)
+                                                class="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed" title="Turun">
+                                            <i class="bi bi-arrow-down"></i>
+                                        </button>
+                                    </form>
+                                </div>
+
+                                {{-- Lebar --}}
+                                @if ($bisaPindah)
+                                    <form method="POST" action="{{ route('petugas.seksi.atur', $seksi) }}">
+                                        @csrf @method('PATCH')
+                                        <select name="lebar" onchange="this.form.submit()" class="form-select text-xs py-1 w-auto">
+                                            @foreach ($lebarLabel as $val => $lbl)
+                                                <option value="{{ $val }}" @selected($seksi->lebar === $val)>{{ $lbl }}</option>
+                                            @endforeach
+                                        </select>
+                                    </form>
+                                @else
+                                    <span class="text-xs text-gray-300 w-[7.5rem] text-center">&mdash;</span>
+                                @endif
+                            </div>
+                        @endforeach
+                    </div>
                 </div>
-            </form>
+            @endforeach
+
+            <div class="pt-1">
+                <a href="{{ route('dashboard.publik') }}" target="_blank" class="btn-secondary text-sm">
+                    <i class="bi bi-box-arrow-up-right"></i> Lihat Dashboard Publik
+                </a>
+            </div>
         @endif
     </div>
 

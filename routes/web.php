@@ -78,10 +78,11 @@ Route::middleware('auth')->group(function () {
         Route::patch('/indikator/{indikator}/aktif', [IndikatorController::class, 'toggleAktif'])->name('indikator.toggle-aktif');
         Route::resource('indikator', IndikatorController::class)->except(['show']);
 
-        // Bagian (section) grafik/tabel di halaman publik yang bisa disembunyikan.
-        Route::get('/bagian-dashboard',  [\App\Http\Controllers\Petugas\SeksiDashboardController::class, 'index'])->name('seksi.index');
-        Route::put('/bagian-dashboard',  [\App\Http\Controllers\Petugas\SeksiDashboardController::class, 'update'])->name('seksi.update');
-        Route::patch('/bagian-dashboard/{seksi}/toggle', [\App\Http\Controllers\Petugas\SeksiDashboardController::class, 'toggle'])->name('seksi.toggle');
+        // Bagian (section) grafik/tabel di halaman publik: tampil/sembunyi,
+        // pindah halaman, geser urutan, ubah lebar — semua aksi kecil & instan.
+        Route::get('/bagian-dashboard',        [\App\Http\Controllers\Petugas\SeksiDashboardController::class, 'index'])->name('seksi.index');
+        Route::post('/bagian-dashboard/reset', [\App\Http\Controllers\Petugas\SeksiDashboardController::class, 'reset'])->name('seksi.reset');
+        Route::patch('/bagian-dashboard/{seksi}', [\App\Http\Controllers\Petugas\SeksiDashboardController::class, 'atur'])->name('seksi.atur');
 
         // Statis didaftarkan sebelum resource supaya '/konfigurasi-import/uji'
         // tidak tertangkap sebagai '/konfigurasi-import/{konfigurasi_import}'.

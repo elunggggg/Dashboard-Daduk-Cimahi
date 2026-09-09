@@ -195,10 +195,10 @@
     <div class="card">
         <div class="p-4 border-b border-gray-100">
             <h2 class="text-sm font-bold text-gray-900">Umur Tunggal (0-99 Tahun)</h2>
-            <p class="text-xs text-gray-400">Cari jumlah penduduk pada umur tertentu, mis. tepat 17 tahun</p>
+            <p class="text-xs text-gray-400">Cari jumlah penduduk pada umur tertentu (mis. tepat 17 tahun), atau isi <strong>Rentang angka</strong> untuk menjumlahkan satu kelompok umur, mis. 17&ndash;40 tahun</p>
         </div>
         <div class="p-4">
-            <x-rincian-indikator :data="$umurTunggalData" :total="$totalPenduduk" />
+            <x-rincian-indikator :data="$umurTunggalData" :total="$totalPenduduk" :range="true" />
         </div>
     </div>
 </x-seksi>

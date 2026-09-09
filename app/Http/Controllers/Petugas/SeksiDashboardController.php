@@ -11,13 +11,18 @@ use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 /**
- * "Bagian Dashboard" — Petugas menyalakan/mematikan tiap section grafik/tabel
- * di halaman publik Demografi, Sosial, Mobilitas. Daftar sectionnya diisi
- * otomatis oleh komponen <x-seksi> begitu halaman publik dibuka, jadi kalau
- * daftar di sini terasa kurang lengkap, buka dulu halaman publik terkait.
+ * "Bagian Dashboard" — Petugas mengatur tiap section grafik/tabel halaman
+ * publik: tampil/sembunyi, pindah halaman (Demografi <-> Sosial), geser urutan,
+ * ubah lebar. Semua aksi kecil & instan (satu klik → simpan → kembali).
+ *
+ * Daftar sectionnya diisi otomatis oleh komponen <x-seksi> begitu halaman
+ * publik dibuka — "Reset" mengosongkan tabel supaya terbentuk ulang dari nilai
+ * bawaan yang dideklarasikan di Blade.
  */
 class SeksiDashboardController extends Controller
 {
+    private const HALAMAN_CAIR = ['demografi', 'sosial'];
+
     public function __construct(
         private readonly AuditLogService $audit,
         private readonly SeksiDashboardRegistry $registry,
@@ -32,66 +37,95 @@ class SeksiDashboardController extends Controller
     }
 
     /**
-     * Simpan status tampil + halaman + urutan + lebar seluruh bagian sekaligus.
-     * - `tampil[]`  : daftar id yang tercentang (sisanya = sembunyi)
-     * - `halaman[id]`: 'demografi' | 'sosial' (pindah antar halaman; hanya untuk
-     *   bagian yang memang di halaman ber-grid cair — bagian Mobilitas TIDAK
-     *   bisa dipindah karena halaman itu memakai mesin render sendiri)
-     * - `urutan[id]`, `lebar[id]`
+     * Satu endpoint untuk semua perubahan pada satu bagian. Field yang dikirim
+     * saja yang diproses:
+     *  - tampil  : "0"/"1"
+     *  - halaman : "demografi"|"sosial" (pindah; hanya sah antar halaman cair)
+     *  - lebar   : "sepertiga"|"separuh"|"penuh"
+     *  - arah    : "naik"|"turun" (tukar urutan dengan tetangga di halaman sama)
      */
-    public function update(Request $request): RedirectResponse
+    public function atur(Request $request, SeksiDashboard $seksi): RedirectResponse
     {
-        $tampilIds = collect($request->input('tampil', []))->map(fn ($v) => (int) $v)->all();
-        $halaman   = (array) $request->input('halaman', []);
-        $urutan    = (array) $request->input('urutan', []);
-        $lebar     = (array) $request->input('lebar', []);
+        $sebelum = $seksi->getAttributes();
 
-        $lebarValid   = \App\Services\SeksiDashboardRegistry::LEBAR_VALID;
-        $halamanCair  = ['demografi', 'sosial'];
-        $berubah      = 0;
+        if ($request->has('tampil')) {
+            $seksi->tampil = $request->boolean('tampil');
+        }
 
-        foreach (SeksiDashboard::all() as $seksi) {
-            $sebelum = $seksi->getAttributes();
+        if ($request->filled('halaman')
+            && in_array($request->input('halaman'), self::HALAMAN_CAIR, true)
+            && in_array($seksi->halaman, self::HALAMAN_CAIR, true)
+            && $request->input('halaman') !== $seksi->halaman) {
+            $seksi->halaman = $request->input('halaman');
+            // Taruh di paling bawah halaman tujuan.
+            $seksi->urutan = ((int) SeksiDashboard::where('halaman', $seksi->halaman)->max('urutan')) + 10;
+        }
 
-            $seksi->tampil = in_array($seksi->id, $tampilIds, true);
+        if ($request->filled('lebar')
+            && in_array($request->input('lebar'), SeksiDashboardRegistry::LEBAR_VALID, true)) {
+            $seksi->lebar = $request->input('lebar');
+        }
 
-            // Pindah halaman hanya sah demografi <-> sosial.
-            if (in_array($seksi->halaman, $halamanCair, true)
-                && isset($halaman[$seksi->id])
-                && in_array($halaman[$seksi->id], $halamanCair, true)) {
-                $seksi->halaman = $halaman[$seksi->id];
-            }
+        if ($seksi->isDirty()) {
+            $seksi->save();
+            $this->audit->updated($seksi, $sebelum);
+        }
 
-            if (isset($urutan[$seksi->id]) && is_numeric($urutan[$seksi->id])) {
-                $seksi->urutan = max(0, min(9999, (int) $urutan[$seksi->id]));
-            }
+        if (in_array($request->input('arah'), ['naik', 'turun'], true)) {
+            $this->geser($seksi, $request->input('arah'));
+        }
 
-            if (isset($lebar[$seksi->id]) && in_array($lebar[$seksi->id], $lebarValid, true)) {
-                $seksi->lebar = $lebar[$seksi->id];
-            }
+        return back()->with('success', 'Bagian "'.$seksi->judul.'" diperbarui.');
+    }
 
-            if ($seksi->isDirty()) {
-                $seksi->save();
-                $this->audit->updated($seksi, $sebelum);
-                $berubah++;
+    /** Tukar posisi $seksi dengan tetangga di atas/bawahnya (halaman sama). */
+    private function geser(SeksiDashboard $seksi, string $arah): void
+    {
+        $grup = SeksiDashboard::where('halaman', $seksi->halaman)
+            ->orderBy('urutan')->orderBy('id')->get()->values();
+
+        $idx  = $grup->search(fn (SeksiDashboard $s) => $s->id === $seksi->id);
+        $lain = $arah === 'naik' ? $idx - 1 : $idx + 1;
+
+        if ($idx === false || $lain < 0 || $lain >= $grup->count()) {
+            return;
+        }
+
+        // Susun ulang lalu tulis urutan berjenjang (0,10,20,...) — tahan
+        // terhadap nilai urutan yang kebetulan sama/berantakan.
+        $baru = $grup->all();
+        [$baru[$idx], $baru[$lain]] = [$baru[$lain], $baru[$idx]];
+
+        foreach ($baru as $i => $s) {
+            if ((int) $s->urutan !== $i * 10) {
+                $s->forceFill(['urutan' => $i * 10])->save();
             }
         }
+    }
+
+    /**
+     * Kembalikan SEMUA bagian ke tata letak AWAL — persis seperti sebelum fitur
+     * "Bagian Dashboard" ada. Kosongkan tabel lalu isi ulang dari
+     * SeksiDashboardRegistry::BAWAAN (tampil semua, halaman/urutan/lebar asal).
+     */
+    public function reset(): RedirectResponse
+    {
+        $jumlah = SeksiDashboard::count();
+
+        \Illuminate\Support\Facades\DB::transaction(function () {
+            SeksiDashboard::query()->delete();
+            $this->registry->seedBawaan();
+        });
+
+        $this->audit->record(
+            AuditLogService::AKSI_DELETE,
+            'seksi_dashboard',
+            null,
+            ['alasan' => 'reset tata letak bagian dashboard ke keadaan awal', 'baris_lama' => $jumlah],
+        );
 
         return redirect()
             ->route('petugas.seksi.index')
-            ->with('success', $berubah === 0 ? 'Tidak ada perubahan.' : "{$berubah} bagian dashboard diperbarui.");
-    }
-
-    /** Toggle satu bagian (dipakai tombol cepat per baris). */
-    public function toggle(SeksiDashboard $seksi): RedirectResponse
-    {
-        $sebelum = $seksi->getAttributes();
-        $seksi->tampil = ! $seksi->tampil;
-        $seksi->save();
-        $this->audit->updated($seksi, $sebelum);
-
-        $status = $seksi->tampil ? 'ditampilkan' : 'disembunyikan';
-
-        return back()->with('success', "Bagian \"{$seksi->judul}\" {$status}.");
+            ->with('success', 'Tata letak dashboard dikembalikan ke keadaan awal (semua bagian tampil, urutan & lebar asal).');
     }
 }
