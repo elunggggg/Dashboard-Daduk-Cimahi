@@ -145,15 +145,17 @@
     <x-rincian-indikator :data="$agamaData" :total="$agamaData->sum()" chart-id="chart-agama" />
 </div>
 
-{{-- Kepala Keluarga + Angkatan Kerja --}}
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+{{-- Kepala Keluarga + Angkatan Kerja — sengaja ditumpuk ke bawah (bukan
+     sebaris) supaya kartu Kepala Keluarga cukup lebar dan angka di sekeliling
+     donut chart-nya tidak saling menumpuk. --}}
+<div class="grid grid-cols-1 gap-4">
 
     <div class="section-card">
         <h2 class="section-title">Kepala Keluarga</h2>
         <p class="text-xs text-gray-400 -mt-2 mb-3">Berdasarkan jenis kelamin</p>
-        <div class="flex items-center gap-6">
+        <div class="flex items-center gap-8">
             @php $totalKk = $kepalaKeluargaJkData->sum(); @endphp
-            <div class="w-36 h-36 flex-shrink-0"><canvas id="chart-kk-jk"></canvas></div>
+            <div class="w-52 h-52 flex-shrink-0"><canvas id="chart-kk-jk"></canvas></div>
             <div class="space-y-3 flex-1">
                 @foreach ($kepalaKeluargaJkData as $label => $jumlah)
                     @php $pct = $totalKk > 0 ? round($jumlah/$totalKk*100,1) : 0; @endphp
