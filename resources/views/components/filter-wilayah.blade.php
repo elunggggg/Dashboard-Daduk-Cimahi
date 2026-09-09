@@ -12,7 +12,7 @@
 {{-- Phase 5: tanpa reload halaman. Komponen ini TIDAK tahu-menahu soal
      fetch/endpoint apa pun — begitu filter diterapkan atau direset ia cuma
      memancarkan custom event `filter-berubah` ke window berisi nilai filter
-     terkini, dan halaman pemakainya (dashboardApp() di dashboard/_skrip) yang
+     terkini, dan halaman pemakainya (dashboardGridApp() di dashboard/_skrip) yang
      mendengarkan event itu lalu melakukan fetch. --}}
 <div
     x-data="{

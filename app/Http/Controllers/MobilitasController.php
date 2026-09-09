@@ -14,94 +14,50 @@ class MobilitasController extends Controller
 {
     public function __construct(private FilterWilayahService $filter) {}
 
-    /**
-     * Satu method menghitung data untuk KEDUANYA: kunjungan pertama (HTML
-     * penuh, jalan tanpa JS sama sekali) dan filter berikutnya lewat fetch()
-     * Alpine (JSON, tanpa reload — Phase 5). Bukan dua alur logika terpisah,
-     * supaya angka kunjungan pertama dan hasil fetch tidak pernah bisa beda.
-     */
     public function __invoke(Request $request): View|JsonResponse
     {
-        $latestWaktu = $this->filter->getLatestWaktu();
-        $waktuList   = $this->filter->getWaktuList();
+        return app(\App\Services\DashboardHalaman::class)->tanggapi('mobilitas', $request);
+    }
 
-        // Pindah & datang adalah ARUS — menjumlahkannya antar semester berarti
-        // "total perpindahan sepanjang periode itu", angka yang punya arti.
-        // Karena itu halaman ini satu-satunya yang membolehkan "Semua Periode".
-        $waktuId = $this->filter->periodeTerpilih($request, bolehSemua: true);
-
-        /*
-         * Distribusi PER KELURAHAN (bukan per label — jenis_indikator ini
-         * cuma punya SATU label 'Datang'/'Pindah' per baris, lihat
-         * DimKategoriSeeder; mengelompokkan lewat label lama membuat chart
-         * "Pendatang — Asal Wilayah" cuma menghasilkan SATU slice/kategori,
-         * bukan distribusi sungguhan). Diurutkan terbanyak untuk bar chart.
-         */
+    /**
+     * Metrik Mobilitas untuk satu kombinasi filter. Bagian per-kelurahan &
+     * tren SENGAJA tidak ikut filter wilayah (selalu 15 kelurahan / seluruh
+     * riwayat) — hanya periode yang berlaku. Mengembalikan ['vars'=>..., 'charts'=>...].
+     */
+    public function hitung(?int $waktuId, ?int $wilayahId, ?string $kecamatan, $waktuList): array
+    {
         $datangData = $this->perKelurahan('mobilitas_datang', $waktuId);
         $pindahData = $this->perKelurahan('mobilitas_pindah', $waktuId);
 
-        $totalDatang = $datangData->sum();
-        $totalPindah = $pindahData->sum();
+        $totalDatang = (int) $datangData->sum();
+        $totalPindah = (int) $pindahData->sum();
         $saldo       = $totalDatang - $totalPindah;
-
-        // Rasio Pindah-Datang = Pindah ÷ Datang × 100 (rasio arus, bukan rasio
-        // terhadap populasi). Dihitung dari totalDatang/totalPindah yang sudah
-        // ada di sini, BUKAN dari sheet RasioPindahDatang yang diimpor — nilai
-        // sheet itu per kelurahan per periode tunggal, tidak sah dijumlahkan
-        // saat "Semua Periode" dipilih, sedangkan rumus ini aman untuk semua
-        // kombinasi filter periode yang tersedia di halaman ini.
         $rasioPindahDatang = $totalDatang > 0 ? round($totalPindah / $totalDatang * 100, 1) : 0;
 
         $selectedWaktu = $waktuList->firstWhere('id', $waktuId);
 
-        // Tren seluruh periode SENGAJA TIDAK ikut filter waktu_id (selalu
-        // menampilkan seluruh riwayat) — jadi tidak perlu dihitung ulang saat
-        // fetch AJAX filter periode, hanya dikirim pada kunjungan HTML pertama.
-        if ($request->ajax() || $request->wantsJson()) {
-            return response()->json([
-                'waktu_id' => $waktuId,
-                'kpi' => [
-                    'total_datang'         => $totalDatang,
-                    'total_pindah'         => $totalPindah,
-                    'saldo'                => $saldo,
-                    'rasio_pindah_datang'  => $rasioPindahDatang,
-                    'periode_label'        => $selectedWaktu->label ?? ($waktuId === null ? 'Semua Periode' : '-'),
-                ],
-                'datang' => [
-                    'labels' => $datangData->keys()->values(),
-                    'values' => $datangData->values(),
-                    'total'  => $totalDatang,
-                ],
-                'pindah' => [
-                    'labels' => $pindahData->keys()->values(),
-                    'values' => $pindahData->values(),
-                    'total'  => $totalPindah,
-                ],
-                // HTML komponen <x-rincian-indikator> dirender di server (sama
-                // persis dengan kunjungan HTML biasa) supaya tabel/filter
-                // kategori di dalamnya tidak perlu ditulis ulang di JS — lihat
-                // catatan panjang di resources/views/mobilitas/index.blade.php.
-                'rincian_html' => [
-                    'datang' => (string) view('components.rincian-indikator', [
-                        'data' => $datangData, 'total' => $totalDatang, 'chartId' => 'chart-datang',
-                    ])->render(),
-                    'pindah' => (string) view('components.rincian-indikator', [
-                        'data' => $pindahData, 'total' => $totalPindah, 'chartId' => 'chart-pindah',
-                    ])->render(),
-                ],
-            ]);
-        }
-
         $trendDatang = $this->trendPerPeriode('mobilitas_datang', $waktuList);
         $trendPindah = $this->trendPerPeriode('mobilitas_pindah', $waktuList);
 
-        return view('mobilitas.index', compact(
-            'datangData', 'pindahData',
-            'totalDatang', 'totalPindah', 'saldo', 'rasioPindahDatang',
-            'trendDatang', 'trendPindah',
-            'waktuList', 'waktuId',
-            'selectedWaktu', 'latestWaktu',
-        ));
+        $vars = [
+            'datangData' => $datangData, 'pindahData' => $pindahData,
+            'totalDatang' => $totalDatang, 'totalPindah' => $totalPindah,
+            'saldo' => $saldo, 'rasioPindahDatang' => $rasioPindahDatang,
+            'trendDatang' => $trendDatang, 'trendPindah' => $trendPindah,
+            'periodeLabelMobilitas' => $selectedWaktu->label ?? ($waktuId === null ? 'Semua Periode' : '-'),
+        ];
+
+        $charts = [
+            'datang' => ['labels' => $datangData->keys()->values(), 'values' => $datangData->values(), 'total' => $totalDatang],
+            'pindah' => ['labels' => $pindahData->keys()->values(), 'values' => $pindahData->values(), 'total' => $totalPindah],
+            'trend'  => [
+                'labels' => $trendDatang->pluck('label')->values(),
+                'datang' => $trendDatang->pluck('total')->values(),
+                'pindah' => $trendPindah->pluck('total')->values(),
+            ],
+        ];
+
+        return ['vars' => $vars, 'charts' => $charts];
     }
 
     /** Total per kelurahan (nama_kelurahan => jumlah), diurutkan terbanyak. */
@@ -121,7 +77,7 @@ class MobilitasController extends Controller
     {
         return $waktuList->map(fn (DimWaktu $w) => [
             'label' => $w->label,
-            'total' => DataAgregat::whereHas('kategori', fn ($q) => $q->where('jenis_indikator', $jenis)->aktif())
+            'total' => (int) DataAgregat::whereHas('kategori', fn ($q) => $q->where('jenis_indikator', $jenis)->aktif())
                 ->where('waktu_id', $w->id)
                 ->sum('jumlah'),
         ]);

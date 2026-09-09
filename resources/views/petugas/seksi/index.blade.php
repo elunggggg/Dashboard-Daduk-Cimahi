@@ -9,13 +9,12 @@
             </p>
             <ul class="list-disc list-inside space-y-1 pl-1">
                 <li><i class="bi bi-eye"></i> / <i class="bi bi-eye-slash"></i> &mdash; tampilkan / sembunyikan bagian dari halaman publik.</li>
-                <li><strong>Halaman</strong> &mdash; pindahkan bagian antara <em>Demografi</em> dan <em>Sosial</em>.</li>
+                <li><strong>Halaman</strong> &mdash; pindahkan bagian ke modul mana pun: <em>Dashboard Publik</em>, <em>Demografi</em>, <em>Sosial</em>, atau <em>Mobilitas</em>.</li>
                 <li><i class="bi bi-arrow-up"></i> <i class="bi bi-arrow-down"></i> &mdash; geser posisi bagian naik / turun di halamannya.</li>
                 <li><strong>Lebar</strong> &mdash; berapa bagian per baris: <em>Sepertiga</em> = 3 per baris, <em>Separuh</em> = 2 per baris, <em>Penuh</em> = melebar 1 baris sendiri. Kalau ada bagian yang disembunyikan, sisa bagian di baris itu otomatis melebar mengisi ruang.</li>
             </ul>
             <p class="mt-2 text-xs text-gray-500">
-                Bagian <strong>Mobilitas</strong> hanya bisa disembunyikan &amp; digeser urutannya (halaman itu punya tata letak sendiri).
-                Daftar belum lengkap? Buka dulu halaman
+                Bagian di halaman <strong>Dashboard Publik</strong> selalu se-Kota &amp; periode terbaru (tanpa filter). Daftar belum lengkap? Buka dulu halaman
                 <a href="{{ route('demografi.index') }}" target="_blank" class="text-brand-700 underline">Demografi</a> /
                 <a href="{{ route('sosial.index') }}" target="_blank" class="text-brand-700 underline">Sosial</a> /
                 <a href="{{ route('mobilitas.index') }}" target="_blank" class="text-brand-700 underline">Mobilitas</a>, lalu segarkan halaman ini.
@@ -40,7 +39,7 @@
             </x-konfirmasi>
         </div>
 
-        @if ($seksiPerHalaman->isEmpty())
+        @if ($seksiPerHalaman->every(fn ($g) => $g->isEmpty()))
             <div class="card p-8 text-center text-gray-400">
                 <i class="bi bi-inbox text-2xl block mb-2"></i>
                 Belum ada bagian yang tercatat. Buka salah satu halaman publik dulu, lalu kembali ke sini.
@@ -49,7 +48,7 @@
             @php $lebarLabel = ['sepertiga' => 'Sepertiga (3/baris)', 'separuh' => 'Separuh (2/baris)', 'penuh' => 'Penuh (1/baris)']; @endphp
 
             @foreach ($seksiPerHalaman as $halaman => $daftar)
-                @php $bisaPindah = in_array($halaman, ['demografi', 'sosial'], true); @endphp
+                @php $bisaPindah = in_array($halaman, \App\Services\SeksiDashboardRegistry::HALAMAN_MODUL, true); @endphp
                 <div class="card overflow-hidden">
                     <div class="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
                         <h2 class="text-sm font-bold text-gray-900">
@@ -60,7 +59,13 @@
                         </span>
                     </div>
                     <div class="divide-y divide-gray-50">
+                        @if ($daftar->isEmpty())
+                            <p class="px-4 py-4 text-xs text-gray-400">
+                                Belum ada bagian di sini. Pindahkan bagian dari modul lain lewat kolom <strong>Halaman</strong>.
+                            </p>
+                        @endif
                         @foreach ($daftar as $i => $seksi)
+                            @php $terkunci = in_array($seksi->kunci, \App\Services\SeksiDashboardRegistry::TERKUNCI, true); @endphp
                             <div class="flex items-center gap-3 px-4 py-2.5 {{ $seksi->tampil ? '' : 'bg-gray-50/60' }}">
 
                                 {{-- Tampil / sembunyi --}}
@@ -78,13 +83,17 @@
                                     <code class="text-[10px] text-gray-300 font-mono">{{ $seksi->kunci }}</code>
                                 </div>
 
+                                @if ($terkunci)
+                                    <span class="text-[11px] text-gray-400 italic flex-shrink-0">bawaan Dashboard — hanya tampil/sembunyi</span>
+                                @else
                                 {{-- Pindah halaman --}}
                                 @if ($bisaPindah)
                                     <form method="POST" action="{{ route('petugas.seksi.atur', $seksi) }}">
                                         @csrf @method('PATCH')
                                         <select name="halaman" onchange="this.form.submit()" class="form-select text-xs py-1 w-auto">
-                                            <option value="demografi" @selected($seksi->halaman === 'demografi')>Demografi</option>
-                                            <option value="sosial" @selected($seksi->halaman === 'sosial')>Sosial</option>
+                                            @foreach (\App\Models\SeksiDashboard::LABEL_HALAMAN as $hVal => $hLbl)
+                                                <option value="{{ $hVal }}" @selected($seksi->halaman === $hVal)>{{ $hLbl }}</option>
+                                            @endforeach
                                         </select>
                                     </form>
                                 @endif
@@ -120,6 +129,7 @@
                                 @else
                                     <span class="text-xs text-gray-300 w-[7.5rem] text-center">&mdash;</span>
                                 @endif
+                                @endif {{-- !$terkunci --}}
                             </div>
                         @endforeach
                     </div>

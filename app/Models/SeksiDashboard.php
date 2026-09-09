@@ -19,6 +19,7 @@ class SeksiDashboard extends Model
 
     /** Label halaman untuk UI. */
     public const LABEL_HALAMAN = [
+        'dashboard'  => 'Dashboard Publik',
         'demografi'  => 'Demografi',
         'sosial'     => 'Sosial',
         'mobilitas'  => 'Mobilitas',

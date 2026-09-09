@@ -10,6 +10,15 @@
 @props(['data', 'total' => null, 'satuan' => 'jiwa', 'chartId' => null, 'range' => false])
 @php
     $rows = collect($data)->map(fn ($v, $k) => ['label' => (string) $k, 'jumlah' => (int) $v])->values();
+
+    // Untuk filter rentang: angka yang ada di tiap label ("Umur 17 Tahun" → 17),
+    // dijadikan opsi dropdown "Dari" / "Sampai".
+    $angkaOpsi = $range
+        ? $rows->map(function ($r) {
+            preg_match('/-?\d+/', $r['label'], $m);
+            return $m ? (int) $m[0] : null;
+        })->filter(fn ($n) => $n !== null)->unique()->sort()->values()
+        : collect();
 @endphp
 @if ($rows->isNotEmpty())
     <div
@@ -77,26 +86,32 @@
                 </select>
             </div>
 
-            @if ($range)
-                <div class="flex flex-wrap items-center gap-2 text-[11px] text-gray-500">
-                    <span class="flex items-center gap-1 flex-shrink-0">
-                        <i class="bi bi-arrows-expand-vertical text-gray-400 rotate-90"></i> Rentang angka
-                    </span>
-                    <input type="number" x-model="rDari" placeholder="dari" min="0"
-                           class="form-input text-xs py-1 w-20" @input.debounce.200ms="terapkanKeChart()">
-                    <span>&ndash;</span>
-                    <input type="number" x-model="rSampai" placeholder="sampai" min="0"
-                           class="form-input text-xs py-1 w-20" @input.debounce.200ms="terapkanKeChart()">
+            @if ($range && $angkaOpsi->isNotEmpty())
+                <div class="flex flex-wrap items-center gap-2">
+                    <label class="text-[11px] font-medium text-gray-500 flex items-center gap-1 flex-shrink-0">
+                        <i class="bi bi-funnel text-gray-400"></i> Rentang
+                    </label>
+                    <select class="form-select text-xs py-1 w-auto" x-model="rDari" @change="terapkanKeChart()">
+                        <option value="">dari</option>
+                        @foreach ($angkaOpsi as $n)
+                            <option value="{{ $n }}">{{ $n }}</option>
+                        @endforeach
+                    </select>
+                    <span class="text-xs text-gray-400">s.d.</span>
+                    <select class="form-select text-xs py-1 w-auto" x-model="rSampai" @change="terapkanKeChart()">
+                        <option value="">sampai</option>
+                        @foreach ($angkaOpsi as $n)
+                            <option value="{{ $n }}">{{ $n }}</option>
+                        @endforeach
+                    </select>
                     <button type="button" x-show="rDari !== '' || rSampai !== ''" x-cloak
                             @click="rDari = ''; rSampai = ''; terapkanKeChart()"
-                            class="text-brand-700 hover:underline flex items-center gap-1">
-                        <i class="bi bi-x-circle"></i> reset rentang
+                            class="text-[11px] text-gray-400 hover:text-brand-700" title="Hapus rentang">
+                        <i class="bi bi-x-circle"></i>
                     </button>
-                    <span x-show="rDari !== '' || rSampai !== ''" x-cloak
-                          class="ml-auto font-semibold text-gray-800">
-                        Total rentang:
-                        <span x-text="window.formatAngka(rentang.total)"></span> {{ $satuan }}
-                        <span class="font-normal text-gray-400">(<span x-text="rentang.jumlahKategori"></span> kategori)</span>
+                    <span x-show="rDari !== '' || rSampai !== ''" x-cloak class="text-[11px] text-gray-500">
+                        Total: <strong class="text-gray-800" x-text="window.formatAngka(rentang.total)"></strong> {{ $satuan }}
+                        (<span x-text="rentang.jumlahKategori"></span> kategori)
                     </span>
                 </div>
             @endif

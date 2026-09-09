@@ -5,14 +5,20 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\Api\KategoriPublikController;
 use App\Models\DimKategori;
 use App\Models\DimWaktu;
-use App\Models\Laporan;
+use App\Models\Metadata;
 use App\Models\PengaturanTampilan;
+use App\Services\DashboardHalaman;
 use App\Services\FilterWilayahService;
+use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class DashboardPublikController extends Controller
 {
-    public function __construct(private FilterWilayahService $filter) {}
+    public function __construct(
+        private FilterWilayahService $filter,
+        private DashboardHalaman $halaman,
+    ) {}
 
     /**
      * Dashboard Publik 2026-08-20 (v2): hanya menampilkan KPI kota (Wajib KTP, Jumlah
@@ -27,7 +33,7 @@ class DashboardPublikController extends Controller
      * terpisah yang hanya bisa diakses Petugas, sekarang siapa pun (Petugas
      * atau Publik tanpa login) bisa mengekspor Excel/PDF dari halaman ini.
      */
-    public function __invoke(): View
+    public function __invoke(Request $request): View
     {
         $pengaturan = PengaturanTampilan::current();
 
@@ -38,7 +44,13 @@ class DashboardPublikController extends Controller
         $defaultWaktuId1 = $duaTerbaru->get(1)?->id ?? $duaTerbaru->get(0)?->id;
         $defaultWaktuId2 = $duaTerbaru->get(0)?->id;
 
+        // Zona "Bagian Dashboard" — bagian modul apa pun yang dipindah Petugas
+        // ke halaman "dashboard". Se-Kota, periode terbaru (tanpa filter di sini).
+        $grid = $this->halaman->susun('dashboard', $request);
+
         return view('dashboard-publik.index', [
+            'kontenGrid'        => $grid['kontenHtml'],
+            'gridCharts'        => $grid['charts'],
             'latarBelakang'     => $pengaturan->latar_belakang_url,
             'latarBelakangBody' => $pengaturan->latar_belakang_body_url,
             'logoUrl'           => $pengaturan->logo_url,
@@ -48,10 +60,37 @@ class DashboardPublikController extends Controller
             'waktuList'         => $this->filter->getWaktuList(),
             'indikatorList'     => KategoriPublikController::INDIKATOR_LIST,
             'kecamatanList'     => $this->filter->getKecamatanList(),
-            'eksporIndikatorList' => DimKategori::select('jenis_indikator')->distinct()->orderBy('jenis_indikator')->pluck('jenis_indikator'),
-            'riwayatEkspor'     => Laporan::with('user:id,name')->latest('id')->take(10)->get(),
+            // Pilihan indikator Ekspor: kode → nama terbaca (pakai nama Metadata
+            // kalau ada, kalau tidak "manusiakan" kodenya), diurutkan A–Z nama.
+            'eksporIndikatorList' => $this->pilihanIndikatorEkspor(),
             'defaultWaktuId1'   => $defaultWaktuId1,
             'defaultWaktuId2'   => $defaultWaktuId2,
         ]);
+    }
+
+    /** @return array<string,string>  kode jenis_indikator => nama terbaca */
+    private function pilihanIndikatorEkspor(): array
+    {
+        $metaNama = Metadata::pluck('nama', 'jenis_indikator');
+
+        $bentang = [
+            'ak_pendidikan' => 'angkatan_kerja_menurut_pendidikan',
+            'kk_'           => 'kepala_keluarga_',
+            '_ku_'          => '_menurut_kelompok_umur_',
+            'usklh'         => 'usia_sekolah',
+            'shbkel'        => 'status_hubungan_dalam_keluarga',
+            'goldar'        => 'golongan_darah',
+            'lpp'           => 'laju_pertumbuhan_penduduk',
+        ];
+
+        return DimKategori::query()->distinct()->pluck('jenis_indikator')
+            ->mapWithKeys(function (string $j) use ($metaNama, $bentang) {
+                $nama = $metaNama->get($j)
+                    ?? Str::headline(str_replace(array_keys($bentang), array_values($bentang), $j));
+
+                return [$j => $nama];
+            })
+            ->sort(SORT_NATURAL | SORT_FLAG_CASE)
+            ->all();
     }
 }

@@ -6,10 +6,10 @@ use App\Models\DimWaktu;
 use Tests\TestCase;
 
 /**
- * Phase 5: filter periode di Mobilitas HARUS bisa dipakai tanpa reload
- * halaman (fetch AJAX ke route yang sama, respons JSON) — dan yang paling
- * penting, angka JSON itu HARUS SAMA PERSIS dengan yang dirender di kunjungan
- * HTML pertama (satu method menghitung keduanya, lihat MobilitasController).
+ * Mobilitas kini ikut mesin grid terpadu (DashboardHalaman) bersama
+ * Dashboard/Demografi/Sosial — filter periode/wilayah tanpa reload, respons
+ * JSON berstruktur sama (konten_html + charts). Angka JSON harus sama dengan
+ * kunjungan HTML pertama untuk filter yang sama.
  */
 class MobilitasAjaxTest extends TestCase
 {
@@ -27,15 +27,16 @@ class MobilitasAjaxTest extends TestCase
         $res->assertOk();
         $res->assertHeader('content-type', 'application/json');
         $res->assertJsonStructure([
-            'waktu_id', 'kpi' => ['total_datang', 'total_pindah', 'saldo', 'rasio_pindah_datang', 'periode_label'],
-            'datang' => ['labels', 'values', 'total'],
-            'pindah' => ['labels', 'values', 'total'],
-            'rincian_html' => ['datang', 'pindah'],
+            'waktu_id', 'wilayah_id', 'kecamatan', 'konten_html',
+            'charts' => [
+                'datang' => ['labels', 'values', 'total'],
+                'pindah' => ['labels', 'values', 'total'],
+                'trend'  => ['labels', 'datang', 'pindah'],
+            ],
         ]);
 
-        // HTML komponen <x-rincian-indikator> harus benar-benar dirender, bukan string kosong.
-        $this->assertStringContainsString('Lihat Tabel', $res->json('rincian_html.datang'));
-        $this->assertStringContainsString('Lihat Tabel', $res->json('rincian_html.pindah'));
+        $this->assertStringContainsString('Pendatang per Kelurahan', $res->json('konten_html'));
+        $this->assertStringContainsString('Lihat Tabel', $res->json('konten_html'));
     }
 
     public function test_angka_json_sama_dengan_html_untuk_filter_yang_sama(): void
@@ -50,16 +51,8 @@ class MobilitasAjaxTest extends TestCase
         $json = $this->get('/mobilitas?waktu_id='.$waktuId, ['Accept' => 'application/json', 'X-Requested-With' => 'XMLHttpRequest']);
         $json->assertOk();
 
-        $this->assertSame($totalDatangHtml, $json->json('kpi.total_datang'), 'Total Datang JSON beda dengan HTML untuk filter yang sama.');
-        $this->assertSame($totalPindahHtml, $json->json('kpi.total_pindah'), 'Total Pindah JSON beda dengan HTML untuk filter yang sama.');
-    }
-
-    public function test_filter_semua_periode_mengembalikan_gabungan(): void
-    {
-        // waktu_id= (kosong eksplisit) → "Semua Periode", bolehSemua:true khusus halaman ini.
-        $res = $this->get('/mobilitas?waktu_id=', ['Accept' => 'application/json', 'X-Requested-With' => 'XMLHttpRequest']);
-        $res->assertOk();
-        $this->assertNull($res->json('waktu_id'));
-        $this->assertSame('Semua Periode', $res->json('kpi.periode_label'));
+        $this->assertSame($waktuId, $json->json('waktu_id'));
+        $this->assertSame($totalDatangHtml, $json->json('charts.datang.total'), 'Total Datang JSON beda dengan HTML.');
+        $this->assertSame($totalPindahHtml, $json->json('charts.pindah.total'), 'Total Pindah JSON beda dengan HTML.');
     }
 }

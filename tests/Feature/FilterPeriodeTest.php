@@ -81,17 +81,20 @@ class FilterPeriodeTest extends TestCase
         $this->get('/sosial')->assertOk()->assertDontSee('Semua Periode');
     }
 
-    public function test_halaman_arus_membolehkan_gabungan_periode(): void
+    /**
+     * Sejak Mobilitas ikut mesin grid terpadu (2026-09-09, bisa saling pindah
+     * bagian dengan Dashboard/Demografi/Sosial), ia memakai filter periode
+     * STANDAR — tidak ada lagi opsi "Semua Periode"/gabungan. Kunjungan biasa
+     * jatuh ke periode terbaru, sama seperti modul lain.
+     */
+    public function test_mobilitas_pakai_filter_periode_standar(): void
     {
         [$lama, $baru] = $this->siapkanDuaPeriode();
 
         $this->get('/mobilitas')
             ->assertOk()
-            ->assertSee('Semua Periode');   // opsinya tersedia
-
-        $this->get('/mobilitas?waktu_id=')
-            ->assertOk()
-            ->assertSee('gabungan');        // penjelasan artinya tampil
+            ->assertViewIs('mobilitas.index')
+            ->assertDontSee('Semua Periode');
     }
 
     /**

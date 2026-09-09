@@ -19,7 +19,7 @@
          dirender di dashboard/_grid, diganti lewat x-html; kanvas Chart.js
          di-redraw oleh gambarSemuaChart() (dashboard/_skrip). --}}
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6"
-         x-data="dashboardApp({
+         x-data="dashboardGridApp({
              konten_html: @js($kontenHtml),
              charts: @js($charts),
              rute: '{{ route('sosial.index') }}',

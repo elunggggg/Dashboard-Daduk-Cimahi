@@ -29,6 +29,15 @@ class SeksiDashboardRegistry
      * @var array<string, array{halaman:string, judul:string, urutan:int, lebar:string}>
      */
     public const BAWAAN = [
+        // ── Dashboard Publik (blok bawaan — hanya bisa disembunyikan/ditampilkan,
+        //    TIDAK bisa dipindah/diurut/diperkecil; digerakkan Alpine sendiri) ──
+        'kpi_kota_ktp'            => ['halaman' => 'dashboard', 'judul' => 'KPI Kota: Jumlah Wajib KTP',        'urutan' => 0, 'lebar' => 'sepertiga'],
+        'kpi_kota_penduduk'      => ['halaman' => 'dashboard', 'judul' => 'KPI Kota: Jumlah Penduduk',          'urutan' => 1, 'lebar' => 'sepertiga'],
+        'kpi_kota_kk'            => ['halaman' => 'dashboard', 'judul' => 'KPI Kota: Jumlah Kepala Keluarga',    'urutan' => 2, 'lebar' => 'sepertiga'],
+        'tren_penduduk_kota'    => ['halaman' => 'dashboard', 'judul' => 'Tren Jumlah Penduduk (se-Kota)',      'urutan' => 3, 'lebar' => 'separuh'],
+        'tren_kepadatan_kota'  => ['halaman' => 'dashboard', 'judul' => 'Tren Kepadatan Penduduk (se-Kota)',   'urutan' => 4,   'lebar' => 'separuh'],
+        'perbandingan_kota'    => ['halaman' => 'dashboard', 'judul' => 'Perbandingan Antar Periode',           'urutan' => 900, 'lebar' => 'penuh'],
+
         // ── Demografi ──
         'kpi_demografi'            => ['halaman' => 'demografi', 'judul' => 'KPI Ringkas Demografi (Total / L / P / Rasio / Kepadatan)', 'urutan' => 0,   'lebar' => 'penuh'],
         'statistik_ringkas'       => ['halaman' => 'demografi', 'judul' => 'Umur Median · Laju Pertumbuhan · WNA',                     'urutan' => 10,  'lebar' => 'penuh'],
@@ -72,11 +81,22 @@ class SeksiDashboardRegistry
         'kia_kelurahan'           => ['halaman' => 'sosial', 'judul' => 'Wajib KIA per Kelurahan',                                    'urutan' => 210, 'lebar' => 'sepertiga'],
         'ktp_kelurahan'           => ['halaman' => 'sosial', 'judul' => 'Wajib KTP per Kelurahan',                                    'urutan' => 220, 'lebar' => 'sepertiga'],
 
-        // ── Mobilitas (lebar tidak dipakai — halaman itu bukan grid cair) ──
-        'pendatang_kelurahan'     => ['halaman' => 'mobilitas', 'judul' => 'Pendatang per Kelurahan',                                 'urutan' => 10,  'lebar' => 'penuh'],
-        'pindah_kelurahan'        => ['halaman' => 'mobilitas', 'judul' => 'Pindah Keluar per Kelurahan',                             'urutan' => 20,  'lebar' => 'penuh'],
+        // ── Mobilitas ──
+        'kpi_mobilitas'           => ['halaman' => 'mobilitas', 'judul' => 'KPI Ringkas Mobilitas (Pendatang / Pindah / Saldo / Rasio)', 'urutan' => 0, 'lebar' => 'penuh'],
+        'pendatang_kelurahan'     => ['halaman' => 'mobilitas', 'judul' => 'Pendatang per Kelurahan',                                 'urutan' => 10,  'lebar' => 'separuh'],
+        'pindah_kelurahan'        => ['halaman' => 'mobilitas', 'judul' => 'Pindah Keluar per Kelurahan',                             'urutan' => 20,  'lebar' => 'separuh'],
         'tren_antar_periode'      => ['halaman' => 'mobilitas', 'judul' => 'Tren Mobilitas Antar Periode',                            'urutan' => 30,  'lebar' => 'penuh'],
     ];
+
+    /** Halaman modul yang bisa jadi tujuan pindah bagian (semua kecuali Metadata/Peta). */
+    public const HALAMAN_MODUL = ['dashboard', 'demografi', 'sosial', 'mobilitas'];
+
+    /**
+     * Bagian yang TERKUNCI (hanya tampil/sembunyi). Saat ini KOSONG — semua
+     * bagian, termasuk Perbandingan & KPI Kota, sudah jadi bagian grid biasa
+     * yang bisa dipindah/diurut/diperkecil.
+     */
+    public const TERKUNCI = [];
 
     /** @var array<string, \App\Models\SeksiDashboard> ditandai "kunci" (unik lintas halaman) */
     private array $map;

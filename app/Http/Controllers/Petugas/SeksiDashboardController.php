@@ -21,7 +21,7 @@ use Illuminate\View\View;
  */
 class SeksiDashboardController extends Controller
 {
-    private const HALAMAN_CAIR = ['demografi', 'sosial'];
+    private const HALAMAN_CAIR = SeksiDashboardRegistry::HALAMAN_MODUL; // dashboard, demografi, sosial, mobilitas
 
     public function __construct(
         private readonly AuditLogService $audit,
@@ -31,7 +31,12 @@ class SeksiDashboardController extends Controller
 
     public function index(): View
     {
-        $seksiPerHalaman = $this->registry->semua();
+        // Selalu tampilkan KEEMPAT grup modul terurut (Dashboard dulu), walau
+        // sebagiannya masih kosong — supaya Petugas melihat bahwa "Dashboard
+        // Publik" memang bisa jadi tujuan pindah.
+        $terkelompok = $this->registry->semua();
+        $seksiPerHalaman = collect(SeksiDashboardRegistry::HALAMAN_MODUL)
+            ->mapWithKeys(fn ($h) => [$h => $terkelompok->get($h, collect())]);
 
         return view('petugas.seksi.index', compact('seksiPerHalaman'));
     }
@@ -40,19 +45,21 @@ class SeksiDashboardController extends Controller
      * Satu endpoint untuk semua perubahan pada satu bagian. Field yang dikirim
      * saja yang diproses:
      *  - tampil  : "0"/"1"
-     *  - halaman : "demografi"|"sosial" (pindah; hanya sah antar halaman cair)
+     *  - halaman : dashboard|demografi|sosial|mobilitas (pindah antar modul)
      *  - lebar   : "sepertiga"|"separuh"|"penuh"
      *  - arah    : "naik"|"turun" (tukar urutan dengan tetangga di halaman sama)
      */
     public function atur(Request $request, SeksiDashboard $seksi): RedirectResponse
     {
-        $sebelum = $seksi->getAttributes();
+        $sebelum   = $seksi->getAttributes();
+        $terkunci  = in_array($seksi->kunci, SeksiDashboardRegistry::TERKUNCI, true);
 
         if ($request->has('tampil')) {
             $seksi->tampil = $request->boolean('tampil');
         }
 
-        if ($request->filled('halaman')
+        // Bagian terkunci: cuma tampil/sembunyi.
+        if (! $terkunci && $request->filled('halaman')
             && in_array($request->input('halaman'), self::HALAMAN_CAIR, true)
             && in_array($seksi->halaman, self::HALAMAN_CAIR, true)
             && $request->input('halaman') !== $seksi->halaman) {
@@ -61,7 +68,7 @@ class SeksiDashboardController extends Controller
             $seksi->urutan = ((int) SeksiDashboard::where('halaman', $seksi->halaman)->max('urutan')) + 10;
         }
 
-        if ($request->filled('lebar')
+        if (! $terkunci && $request->filled('lebar')
             && in_array($request->input('lebar'), SeksiDashboardRegistry::LEBAR_VALID, true)) {
             $seksi->lebar = $request->input('lebar');
         }
@@ -71,7 +78,7 @@ class SeksiDashboardController extends Controller
             $this->audit->updated($seksi, $sebelum);
         }
 
-        if (in_array($request->input('arah'), ['naik', 'turun'], true)) {
+        if (! $terkunci && in_array($request->input('arah'), ['naik', 'turun'], true)) {
             $this->geser($seksi, $request->input('arah'));
         }
 

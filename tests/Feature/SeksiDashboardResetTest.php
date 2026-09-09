@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\SeksiDashboard;
 use App\Models\User;
 use App\Services\SeksiDashboardRegistry;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
 
 /**
@@ -14,9 +15,16 @@ use Tests\TestCase;
  */
 class SeksiDashboardResetTest extends TestCase
 {
+    // Test ini mengacak-acak & mereset tabel seksi_dashboard — bungkus transaksi
+    // supaya konfigurasi "Bagian Dashboard" milik Petugas TIDAK ikut ter-reset
+    // setiap kali suite dijalankan (test ini kena DB asli).
+    use DatabaseTransactions;
+
     public function test_bawaan_konsisten_dengan_yang_terdaftar_saat_halaman_dibuka(): void
     {
-        // Buka ketiga halaman publik supaya <x-seksi> mendaftarkan semua bagian.
+        // Buka semua halaman publik supaya <x-seksi> mendaftarkan semua bagian
+        // (termasuk blok bawaan Dashboard Publik di "/").
+        $this->get('/')->assertOk();
         $this->get('/demografi')->assertOk();
         $this->get('/sosial')->assertOk();
         $this->get('/mobilitas')->assertOk();

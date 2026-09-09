@@ -112,8 +112,10 @@
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
 
-            {{-- Map (2/3) --}}
-            <div class="lg:col-span-2 card overflow-hidden relative">
+            {{-- Map (2/3). `isolate` (+ z-0) mengurung z-index internal Leaflet
+                 (kontrol/pane bisa sampai ~1000) dalam stacking context sendiri,
+                 supaya TIDAK menimpa navbar sticky (z-40) saat halaman digulir. --}}
+            <div class="lg:col-span-2 card overflow-hidden relative isolate z-0">
                 <div id="leaflet-map" class="w-full h-[420px] sm:h-[520px]"></div>
                 <div x-show="loading" x-cloak
                      class="absolute inset-0 bg-white/60 flex items-center justify-center z-[1000]">
