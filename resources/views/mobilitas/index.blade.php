@@ -198,8 +198,15 @@
                 loading: false,
 
                 init() {
-                    this.gambar('chart-datang', this.data.datang, window.DadukColors.positif);
-                    this.gambar('chart-pindah', this.data.pindah, window.DadukColors.negatif);
+                    // Tunggu satu tick: saat init() dipanggil, Alpine belum
+                    // membuka blok `x-show="!loading" x-cloak` yang membungkus
+                    // kedua <canvas>, jadi kalau digambar sekarang Chart.js
+                    // menghitung ukuran 0×0 di kontainer display:none dan grafik
+                    // tampak kosong. Pola sama dipakai di Demografi & Sosial.
+                    this.$nextTick(() => {
+                        this.gambar('chart-datang', this.data.datang, window.DadukColors.positif);
+                        this.gambar('chart-pindah', this.data.pindah, window.DadukColors.negatif);
+                    });
                 },
 
                 fmt(n) { return window.formatAngka(n); },

@@ -16,8 +16,6 @@ Chart.defaults.set('plugins.datalabels', { display: false });
 
 axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
 
-Alpine.start();
-
 // ── Utility ─────────────────────────────────────────────────────────────────
 
 export function formatAngka(n) {
@@ -157,3 +155,11 @@ export function makeDoughnutChart(canvasId, labels, values, opts = {}) {
         },
     });
 }
+
+// Dijalankan PALING AKHIR: initTree Alpine bersifat sinkron, jadi begitu
+// Alpine.start() dipanggil, semua `x-data` (mis. mobilitasApp()) + method
+// init()-nya langsung dievaluasi. Kalau start di atas, `window.DadukColors`
+// & `window.formatAngka` di bawah belum sempat di-assign → init() yang
+// memakainya melempar TypeError, komponen gagal mount, dan blok
+// `x-show="!loading" x-cloak` tidak pernah dibuka (data "tidak muncul").
+Alpine.start();
