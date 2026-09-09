@@ -15,15 +15,17 @@ class SosialController extends Controller
 
     public function __invoke(Request $request): View|JsonResponse
     {
-        $latestWaktu   = $this->filter->getLatestWaktu();
-        $waktuList     = $this->filter->getWaktuList();
-        $kecamatanList = $this->filter->getKecamatanList();
-        $wilayahList   = $this->filter->getWilayahList();
+        return app(\App\Services\DashboardHalaman::class)->tanggapi('sosial', $request);
+    }
 
-        $waktuId   = $this->filter->periodeTerpilih($request);
-        $wilayahId = $request->integer('wilayah_id') ?: null;
-        $kecamatan = $request->string('kecamatan')->toString() ?: null;
-
+    /**
+     * Menghitung SELURUH metrik + payload chart Sosial untuk satu kombinasi
+     * filter. Dipisah dari __invoke supaya bisa dipakai ulang oleh halaman lain
+     * (Demografi) ketika sebuah bagian Sosial dipindahkan ke sana. Mengembalikan
+     * ['vars' => [...], 'charts' => [...]].
+     */
+    public function hitung(?int $waktuId, ?int $wilayahId, ?string $kecamatan, $waktuList): array
+    {
         // Diurutkan dari terbanyak — sesuai spek tampilan (bar chart Agama/
         // Pekerjaan/Pendidikan harus descending), bukan urutan seeder.
         $pendidikanData = $this->aggr('pendidikan',     $waktuId, $wilayahId, $kecamatan)->sortDesc();
@@ -219,11 +221,7 @@ class SosialController extends Controller
 
         $selectedWaktu = $waktuList->firstWhere('id', $waktuId);
 
-        // Variabel yang dipakai sosial/_konten.blade.php — dipisah dari
-        // variabel filter (waktuList, kecamatanList, dst) supaya bisa dipakai
-        // ulang oleh kunjungan HTML biasa MAUPUN cabang JSON di bawah (Phase 5,
-        // filter tanpa reload) tanpa menulis daftar variabel dua kali.
-        $kontenVars = [
+        $vars = [
             'totalPenduduk' => $totalPenduduk, 'selectedWaktu' => $selectedWaktu,
             'pendidikanData' => $pendidikanData, 'pekerjaanData' => $pekerjaanData,
             'jenisPekerjaanData' => $jenisPekerjaanData, 'usiaSekolahData' => $usiaSekolahData,
@@ -242,54 +240,26 @@ class SosialController extends Controller
             'terbitTahunan' => $terbitTahunan,
         ];
 
-        if ($request->ajax() || $request->wantsJson()) {
-            $seri = fn (Collection $d) => ['labels' => $d->keys()->values(), 'values' => $d->values()];
+        $seri = fn (Collection $d) => ['labels' => $d->keys()->values(), 'values' => $d->values()];
 
-            return response()->json([
-                'waktu_id' => $waktuId, 'wilayah_id' => $wilayahId, 'kecamatan' => $kecamatan,
-                'konten_html' => (string) view('sosial._konten', $kontenVars)->render(),
-                // Data mentah untuk 14 kanvas Chart.js — redraw-nya di JS
-                // (gambarSemuaChart()), BUKAN lewat <script> di dalam
-                // konten_html (browser tidak menjalankan <script> hasil x-html).
-                'charts' => [
-                    'edu'          => $seri($pendidikanData),
-                    'job'          => $seri($pekerjaanData),
-                    'usia_sekolah' => $seri($usiaSekolahData),
-                    'agama'        => $seri($agamaData),
-                    'ktp_status'   => $seri($ktpStatusData),
-                    'kk_status'    => $seri($kkStatusData),
-                    'goldar'       => $seri($golonganDarahData),
-                    'shbkel'       => $seri($shbkelData),
-                    'kia'          => ['labels' => ['Memiliki KIA', 'Belum Memiliki KIA'], 'values' => [$kiaData->get('Memiliki KIA', 0), $kiaData->get('Belum Memiliki KIA', 0)]],
-                    'akta_lahir'   => ['labels' => ['Memiliki', 'Belum Memiliki'], 'values' => [$aktaLahirData->get('Memiliki Akta Lahir', 0), $aktaLahirData->get('Belum Memiliki Akta Lahir', 0)]],
-                    'kk_jk'        => $seri($kepalaKeluargaJkData),
-                    // Ketiganya SELALU seluruh 15 kelurahan, TIDAK ikut filter
-                    // wilayah/kecamatan (lihat komentar stackedPerKelurahan()) —
-                    // tetap dikirim ulang di sini supaya konsisten dengan pola
-                    // "hitung ulang semuanya" yang sama seperti kunjungan HTML,
-                    // bukan optimisasi prematur yang berisiko beda hasil.
-                    'akta_lahir_kelurahan' => $aktaLahirKelurahanData,
-                    'kia_kelurahan'        => $kiaKelurahanData,
-                    'ktp_kelurahan'        => $ktpKelurahanData,
-                ],
-            ]);
-        }
+        $charts = [
+            'edu'          => $seri($pendidikanData),
+            'job'          => $seri($pekerjaanData),
+            'usia_sekolah' => $seri($usiaSekolahData),
+            'agama'        => $seri($agamaData),
+            'ktp_status'   => $seri($ktpStatusData),
+            'kk_status'    => $seri($kkStatusData),
+            'goldar'       => $seri($golonganDarahData),
+            'shbkel'       => $seri($shbkelData),
+            'kia'          => ['labels' => ['Memiliki KIA', 'Belum Memiliki KIA'], 'values' => [$kiaData->get('Memiliki KIA', 0), $kiaData->get('Belum Memiliki KIA', 0)]],
+            'akta_lahir'   => ['labels' => ['Memiliki', 'Belum Memiliki'], 'values' => [$aktaLahirData->get('Memiliki Akta Lahir', 0), $aktaLahirData->get('Belum Memiliki Akta Lahir', 0)]],
+            'kk_jk'        => $seri($kepalaKeluargaJkData),
+            'akta_lahir_kelurahan' => $aktaLahirKelurahanData,
+            'kia_kelurahan'        => $kiaKelurahanData,
+            'ktp_kelurahan'        => $ktpKelurahanData,
+        ];
 
-        return view('sosial.index', compact(
-            'pendidikanData', 'pekerjaanData', 'jenisPekerjaanData', 'usiaSekolahData', 'agamaData',
-            'ktpData', 'kkData', 'kiaData', 'aktaLahirData', 'aktaKawinData', 'golonganDarahData',
-            'ktpStatusData', 'kkStatusData',
-            'aktaLahirKelurahanData', 'kiaKelurahanData', 'ktpKelurahanData',
-            'kepalaKeluargaJkData', 'aktaLahir05Data', 'aktaLahir017Data',
-            'shbkelData', 'angkatanKerjaData', 'pctTpak', 'akPendidikanData',
-            'kkStatusKawinData', 'kkKelPekerjaanData', 'kkAgamaData', 'kkPendidikanData',
-            'agamaKuData', 'kkKawinKuData', 'kkPekerjaanData',
-            'pctKtp', 'pctKK', 'pctKia', 'pctAktaLahir', 'pctAktaKawin',
-            'pctAktaLahir05', 'pctAktaLahir017', 'terbitTahunan',
-            'totalPenduduk', 'waktuList', 'kecamatanList', 'wilayahList',
-            'waktuId', 'wilayahId', 'kecamatan',
-            'selectedWaktu', 'latestWaktu',
-        ));
+        return ['vars' => $vars, 'charts' => $charts];
     }
 
     private function aggr(string $jenis, ?int $waktuId, ?int $wilayahId, ?string $kecamatan): Collection

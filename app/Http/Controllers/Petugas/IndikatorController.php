@@ -100,6 +100,22 @@ class IndikatorController extends Controller
             ->with('success', "Indikator '{$indikator->label}' berhasil diperbarui.");
     }
 
+    /** Toggle cepat aktif/nonaktif dari tabel daftar — 1 klik, tanpa buka form Ubah. */
+    public function toggleAktif(DimKategori $indikator): RedirectResponse
+    {
+        $sebelum = $indikator->getAttributes();
+
+        $indikator->aktif = ! $indikator->aktif;
+        $indikator->save();
+
+        $this->audit->updated($indikator, $sebelum);
+        $this->cache->flush();
+
+        $status = $indikator->aktif ? 'ditampilkan di' : 'disembunyikan dari';
+
+        return back()->with('success', "Indikator '{$indikator->label}' {$status} dashboard publik.");
+    }
+
     public function destroy(DimKategori $indikator): RedirectResponse
     {
         $jumlahData = $indikator->dataAgregat()->count();

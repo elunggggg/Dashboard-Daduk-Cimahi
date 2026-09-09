@@ -122,28 +122,33 @@
             <x-skeleton-card :rows="3" />
         </div>
         <div x-show="!loading" x-cloak class="grid grid-cols-1 md:grid-cols-2 gap-5">
-            <div class="section-card">
-                <h2 class="section-title">Pendatang per Kelurahan</h2>
-                <p class="text-xs text-gray-400 -mt-2 mb-3">
-                    <span x-text="data.kpi.periode_label"></span> — diurutkan terbanyak
-                </p>
-                <div class="h-[400px]"><canvas id="chart-datang"></canvas></div>
-                <div x-html="data.rincian_html.datang"></div>
-            </div>
-            <div class="section-card">
-                <h2 class="section-title">Pindah Keluar per Kelurahan</h2>
-                <p class="text-xs text-gray-400 -mt-2 mb-3">
-                    <span x-text="data.kpi.periode_label"></span> — diurutkan terbanyak
-                </p>
-                <div class="h-[400px]"><canvas id="chart-pindah"></canvas></div>
-                <div x-html="data.rincian_html.pindah"></div>
-            </div>
+            <x-seksi halaman="mobilitas" kunci="pendatang_kelurahan" judul="Pendatang per Kelurahan" :urutan="10">
+                <div class="section-card">
+                    <h2 class="section-title">Pendatang per Kelurahan</h2>
+                    <p class="text-xs text-gray-400 -mt-2 mb-3">
+                        <span x-text="data.kpi.periode_label"></span> — diurutkan terbanyak
+                    </p>
+                    <div class="h-[400px]"><canvas id="chart-datang"></canvas></div>
+                    <div x-html="data.rincian_html.datang"></div>
+                </div>
+            </x-seksi>
+            <x-seksi halaman="mobilitas" kunci="pindah_kelurahan" judul="Pindah Keluar per Kelurahan" :urutan="20">
+                <div class="section-card">
+                    <h2 class="section-title">Pindah Keluar per Kelurahan</h2>
+                    <p class="text-xs text-gray-400 -mt-2 mb-3">
+                        <span x-text="data.kpi.periode_label"></span> — diurutkan terbanyak
+                    </p>
+                    <div class="h-[400px]"><canvas id="chart-pindah"></canvas></div>
+                    <div x-html="data.rincian_html.pindah"></div>
+                </div>
+            </x-seksi>
         </div>
 
         {{-- Tren antar periode — line kalau >1 periode, bar kalau cuma 1.
              SENGAJA TIDAK ikut x-data mobilitasApp() / filter waktu_id di atas
              (selalu menampilkan seluruh periode), jadi cukup dirender sekali
              di server seperti sebelumnya, tidak pernah di-fetch ulang. --}}
+        <x-seksi halaman="mobilitas" kunci="tren_antar_periode" judul="Tren Mobilitas Antar Periode" :urutan="30">
         <div class="section-card">
             <h2 class="section-title">Tren Mobilitas Antar Periode</h2>
             <p class="text-xs text-gray-400 -mt-2 mb-3">Perbandingan jumlah datang vs pindah setiap semester</p>
@@ -183,6 +188,7 @@
                 </div>
             </div>
         </div>
+        </x-seksi>
 
     </div>
 
@@ -267,6 +273,11 @@
             const fmt = window.formatAngka;
             const W = window.DadukColors;
 
+            // Bagian "Tren" bisa disembunyikan Petugas (menu Bagian Dashboard) —
+            // kalau kanvasnya tidak ada, lewati seluruh blok ini.
+            const trendCanvas = document.getElementById('chart-trend');
+            if (!trendCanvas) return;
+
             // ── Tren antar periode — line kalau >1 periode, bar kalau cuma 1 ──
             // (statis, tidak ikut filter waktu_id — lihat catatan di Blade)
             const trendLabelsAsli = @json($trendDatang->pluck('label')->values());
@@ -284,7 +295,7 @@
                     { label: 'Pindah Keluar', data: trendPdhAsli, backgroundColor: W.negatif, borderRadius: 4, borderSkipped: false },
                 ];
 
-            window._chartTrend = new Chart(document.getElementById('chart-trend'), {
+            window._chartTrend = new Chart(trendCanvas, {
                 type: trendChartType,
                 data: { labels: trendLabelsAsli, datasets: trendDatasets },
                 options: {

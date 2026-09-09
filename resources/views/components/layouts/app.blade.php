@@ -89,6 +89,7 @@
                         ['route' => 'petugas.pengguna.index', 'label' => 'Kelola Pengguna', 'icon' => 'bi-person-gear'],
                         ['route' => 'petugas.metadata.index', 'label' => 'Kelola Metadata', 'icon' => 'bi-book'],
                         ['route' => 'petugas.indikator.index', 'label' => 'Kelola Indikator', 'icon' => 'bi-list-check'],
+                        ['route' => 'petugas.seksi.index', 'label' => 'Bagian Dashboard', 'icon' => 'bi-ui-checks-grid'],
                         ['route' => 'petugas.konfigurasi-import.index', 'label' => 'Konfigurasi Import', 'icon' => 'bi-diagram-3'],
                         ['route' => 'petugas.pengaturan.edit', 'label' => 'Tampilan Sistem', 'icon' => 'bi-image'],
                         ['route' => 'petugas.audit.index', 'label' => 'Audit Log', 'icon' => 'bi-journal-text'],

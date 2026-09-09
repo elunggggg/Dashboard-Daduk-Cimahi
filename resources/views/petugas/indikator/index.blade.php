@@ -76,11 +76,24 @@
                             <td class="font-medium text-gray-900">{{ $k->label }}</td>
                             <td class="text-right tabular-nums">{{ $k->urutan }}</td>
                             <td class="text-center">
-                                @if($k->aktif)
-                                    <span class="badge-green">Aktif</span>
-                                @else
-                                    <span class="badge-gray">Nonaktif</span>
-                                @endif
+                                {{-- 1 klik = tampilkan/sembunyikan indikator ini dari dashboard publik --}}
+                                <form method="POST" action="{{ route('petugas.indikator.toggle-aktif', $k) }}" class="inline">
+                                    @csrf
+                                    @method('PATCH')
+                                    @if($k->aktif)
+                                        <button type="submit"
+                                                class="badge-green inline-flex items-center gap-1 hover:brightness-95 transition"
+                                                title="Klik untuk menyembunyikan dari dashboard publik">
+                                            <i class="bi bi-eye-fill text-[10px]"></i> Aktif
+                                        </button>
+                                    @else
+                                        <button type="submit"
+                                                class="badge-gray inline-flex items-center gap-1 hover:brightness-95 transition"
+                                                title="Klik untuk menampilkan di dashboard publik">
+                                            <i class="bi bi-eye-slash text-[10px]"></i> Nonaktif
+                                        </button>
+                                    @endif
+                                </form>
                             </td>
                             <td class="text-right">
                                 <span class="{{ $k->data_agregat_count > 0 ? 'badge-blue' : 'badge-gray' }}">

@@ -12,7 +12,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // Dibaca sekali per request oleh semua komponen <x-seksi>.
+        $this->app->singleton(\App\Services\SeksiDashboardRegistry::class);
     }
 
     /**
