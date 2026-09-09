@@ -25,7 +25,7 @@
             @if ($latarBelakang)
                 <div
                     class="rounded-2xl overflow-hidden bg-white border border-gray-200 shadow-sm h-48 sm:h-64 flex items-center justify-center">
-                    <img src="{{ $latarBelakang }}" alt="Dashboard Statistik Kependudukan Disdukcapil Kota Cimahi"
+                    <img src="{{ $latarBelakang }}" alt="Dashboard Statistik Kependudukan {{ $namaInstansi }}"
                         class="w-full h-full object-contain p-3 sm:p-4">
                 </div>
             @else
@@ -33,7 +33,7 @@
                     class="rounded-2xl bg-white border border-gray-200 shadow-sm h-48 sm:h-64 flex items-center justify-center px-4">
                     <h1 class="text-xl sm:text-3xl font-extrabold tracking-tight text-gray-900 text-center">
                         Dashboard Statistik Kependudukan<br class="sm:hidden">
-                        <span class="hidden sm:inline"> </span>Disdukcapil Kota Cimahi
+                        <span class="hidden sm:inline"> </span>{{ $namaInstansi }}
                     </h1>
                 </div>
             @endif

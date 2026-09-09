@@ -43,6 +43,8 @@ class DashboardPublikController extends Controller
             'latarBelakangBody' => $pengaturan->latar_belakang_body_url,
             'logoUrl'           => $pengaturan->logo_url,
             'logoInstansiUrl'   => $pengaturan->logo_instansi_url,
+            'namaSistem'        => $pengaturan->nama_sistem_tampil,
+            'namaInstansi'      => $pengaturan->nama_instansi_tampil,
             'waktuList'         => $this->filter->getWaktuList(),
             'indikatorList'     => KategoriPublikController::INDIKATOR_LIST,
             'kecamatanList'     => $this->filter->getKecamatanList(),

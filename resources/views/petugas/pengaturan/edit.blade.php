@@ -1,9 +1,38 @@
-<x-layouts.app title="Tampilan Dashboard Publik" breadcrumb="Halaman Petugas / Tampilan Dashboard Publik">
+<x-layouts.app title="Tampilan Sistem" breadcrumb="Halaman Petugas / Tampilan Sistem">
 
     <div class="max-w-2xl" x-data="{ preview: null, previewLogo: null }">
         <form method="POST" action="{{ route('petugas.pengaturan.update') }}" enctype="multipart/form-data" class="card p-6">
             @csrf
             @method('PUT')
+
+            {{-- ── Nama sistem ── --}}
+            <h2 class="text-lg font-bold text-gray-900 mb-1">Nama Sistem</h2>
+            <p class="text-sm text-gray-500 mb-5">
+                Teks yang tampil sebagai nama aplikasi di navbar, sidebar, judul tab browser, halaman login,
+                dan footer. Kosongkan untuk memakai teks bawaan.
+            </p>
+
+            <div class="mb-4">
+                <label for="nama_sistem" class="form-label">Nama Sistem</label>
+                <input type="text" name="nama_sistem" id="nama_sistem" maxlength="60"
+                       value="{{ old('nama_sistem', $pengaturan->nama_sistem) }}"
+                       placeholder="{{ \App\Models\PengaturanTampilan::NAMA_SISTEM_BAWAAN }}"
+                       class="form-input @error('nama_sistem') border-red-400 @enderror">
+                <p class="mt-1 text-xs text-gray-400">Nama pendek, mis. singkatan aplikasi. Bawaan: "{{ \App\Models\PengaturanTampilan::NAMA_SISTEM_BAWAAN }}".</p>
+                @error('nama_sistem') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+            </div>
+
+            <div class="mb-2">
+                <label for="nama_instansi" class="form-label">Nama Instansi</label>
+                <input type="text" name="nama_instansi" id="nama_instansi" maxlength="120"
+                       value="{{ old('nama_instansi', $pengaturan->nama_instansi) }}"
+                       placeholder="{{ \App\Models\PengaturanTampilan::NAMA_INSTANSI_BAWAAN }}"
+                       class="form-input @error('nama_instansi') border-red-400 @enderror">
+                <p class="mt-1 text-xs text-gray-400">Baris kecil di bawah nama sistem. Bawaan: "{{ \App\Models\PengaturanTampilan::NAMA_INSTANSI_BAWAAN }}".</p>
+                @error('nama_instansi') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+            </div>
+
+            <hr class="my-6 border-gray-100">
 
             <h2 class="text-lg font-bold text-gray-900 mb-1">Gambar Latar Belakang Header</h2>
             <p class="text-sm text-gray-500 mb-6">
@@ -46,14 +75,15 @@
             <h2 class="text-lg font-bold text-gray-900 mb-1">Logo Aplikasi</h2>
             <p class="text-sm text-gray-500 mb-6">
                 Tampil di navbar (semua halaman publik) dan di kiri masthead Dashboard Publik, menggantikan lencana
-                bulat "DC". Disarankan gambar persegi, maks. 2&nbsp;MB, format JPG/PNG/WEBP.
+                "DC". Logo ditampilkan APA ADANYA sesuai berkas yang diunggah — tidak dipotong dan tidak dibulatkan.
+                Disarankan gambar persegi berlatar transparan, maks. 2&nbsp;MB, format JPG/PNG/WEBP.
             </p>
 
             <div class="flex items-center gap-4 mb-5">
-                <div class="w-16 h-16 rounded-full overflow-hidden border border-gray-200 bg-gray-900 relative flex-shrink-0">
-                    <img x-show="previewLogo" :src="previewLogo" x-cloak class="w-full h-full object-cover">
+                <div class="w-16 h-16 overflow-hidden border border-gray-200 bg-white relative flex-shrink-0">
+                    <img x-show="previewLogo" :src="previewLogo" x-cloak class="w-full h-full object-contain">
                     <img x-show="!previewLogo" src="{{ $pengaturan->logo_url }}"
-                         class="w-full h-full object-cover" @if(!$pengaturan->logo_url) x-cloak @endif>
+                         class="w-full h-full object-contain" @if(!$pengaturan->logo_url) x-cloak @endif>
                     <div x-show="!previewLogo && !@js((bool) $pengaturan->logo_url)"
                          class="absolute inset-0 flex items-center justify-center text-gray-400">
                         <i class="bi bi-image"></i>

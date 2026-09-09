@@ -1,7 +1,7 @@
 <x-layouts.app title="Kelola Indikator" breadcrumb="Halaman Petugas / Kelola Indikator">
 
     {{-- ── Toolbar ── --}}
-    <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
         <div>
             <h2 class="text-lg font-bold text-gray-900">Daftar Indikator</h2>
             <p class="text-sm text-gray-500">{{ $indikator->total() }} indikator terdaftar</p>
@@ -11,21 +11,34 @@
         </a>
     </div>
 
+    {{-- ── Penjelasan singkat istilah ── --}}
+    <div class="card p-4 mb-5 bg-brand-50/40 border-brand-100 text-sm text-gray-600">
+        <p class="flex items-start gap-2">
+            <i class="bi bi-info-circle-fill text-brand-600 mt-0.5"></i>
+            <span>
+                <strong class="text-gray-800">Kelompok Indikator</strong> menyatukan beberapa kategori sejenis ke dalam
+                satu grafik — misalnya kelompok <em>Agama</em> berisi kategori Islam, Kristen, Katolik, dan seterusnya.
+                <strong class="text-gray-800">Nama Kategori</strong> adalah teks yang dibaca pengunjung di legenda grafik
+                dan tabel dashboard.
+            </span>
+        </p>
+    </div>
+
     {{-- ── Filter ── --}}
     <form method="GET" action="{{ route('petugas.indikator.index') }}" class="card p-4 mb-5">
         <div class="grid gap-3 sm:grid-cols-[1fr_auto_auto] sm:items-end">
             <div>
                 <label for="q" class="form-label">Cari</label>
                 <input type="text" name="q" id="q" value="{{ $q }}"
-                       placeholder="Label atau jenis indikator…"
+                       placeholder="Ketik nama kategori atau nama kelompok…"
                        class="form-input">
             </div>
             <div>
-                <label for="jenis" class="form-label">Jenis Indikator</label>
+                <label for="jenis" class="form-label">Kelompok Indikator</label>
                 <select name="jenis" id="jenis" class="form-select">
-                    <option value="">Semua</option>
+                    <option value="">Semua kelompok</option>
                     @foreach($jenisList as $j)
-                        <option value="{{ $j }}" @selected($jenis === $j)>{{ $j }}</option>
+                        <option value="{{ $j }}" @selected($jenis === $j)>{{ \Illuminate\Support\Str::headline($j) }}</option>
                     @endforeach
                 </select>
             </div>
@@ -44,9 +57,9 @@
             <table class="tw-table">
                 <thead>
                     <tr>
-                        <th>Jenis Indikator</th>
-                        <th>Label</th>
-                        <th class="text-right">Urutan</th>
+                        <th>Kelompok Indikator</th>
+                        <th>Nama Kategori</th>
+                        <th class="text-right">Urutan Tampil</th>
                         <th class="text-center">Status</th>
                         <th class="text-right">Baris Data</th>
                         <th>Metadata</th>
@@ -56,7 +69,10 @@
                 <tbody>
                     @forelse($indikator as $k)
                         <tr class="{{ ! $k->aktif ? 'bg-gray-50/60' : '' }}">
-                            <td><code class="text-xs bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded font-mono">{{ $k->jenis_indikator }}</code></td>
+                            <td>
+                                <span class="font-medium text-gray-900">{{ $k->jenis_terbaca }}</span>
+                                <code class="block mt-0.5 text-[11px] text-gray-400 font-mono">{{ $k->jenis_indikator }}</code>
+                            </td>
                             <td class="font-medium text-gray-900">{{ $k->label }}</td>
                             <td class="text-right tabular-nums">{{ $k->urutan }}</td>
                             <td class="text-center">
@@ -105,8 +121,10 @@
                                         kelas="p-2 rounded-lg text-gray-500 hover:bg-red-50 hover:text-red-600 transition-colors">
                                         <dl class="rounded-lg bg-gray-50 p-3 space-y-1 text-xs">
                                             <div class="flex justify-between gap-4">
-                                                <dt class="text-gray-500">Jenis Indikator</dt>
-                                                <dd class="font-mono text-gray-900">{{ $k->jenis_indikator }}</dd>
+                                                <dt class="text-gray-500">Kelompok Indikator</dt>
+                                                <dd class="text-gray-900">{{ $k->jenis_terbaca }}
+                                                    <code class="text-[11px] text-gray-400 font-mono">({{ $k->jenis_indikator }})</code>
+                                                </dd>
                                             </div>
                                             <div class="flex justify-between gap-4">
                                                 <dt class="text-gray-500">Baris data agregat</dt>

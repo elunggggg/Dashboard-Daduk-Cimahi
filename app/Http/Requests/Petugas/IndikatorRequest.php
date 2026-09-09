@@ -32,8 +32,8 @@ class IndikatorRequest extends FormRequest
     public function attributes(): array
     {
         return [
-            'jenis_indikator' => 'jenis indikator',
-            'label'           => 'label',
+            'jenis_indikator' => 'kelompok indikator',
+            'label'           => 'nama kategori',
             'urutan'          => 'urutan tampil',
             'aktif'           => 'status aktif',
         ];
@@ -42,8 +42,8 @@ class IndikatorRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'jenis_indikator.alpha_dash' => 'Jenis indikator hanya boleh berisi huruf, angka, garis bawah (_), dan strip (-) — tanpa spasi. Contoh: kepemilikan_ktp.',
-            'label.unique' => 'Label ini sudah ada untuk jenis indikator yang sama.',
+            'jenis_indikator.alpha_dash' => 'Kelompok indikator hanya boleh berisi huruf, angka, garis bawah (_), dan strip (-) — tanpa spasi. Contoh: kepemilikan_ktp.',
+            'label.unique' => 'Nama kategori ini sudah ada di kelompok indikator yang sama.',
         ];
     }
 

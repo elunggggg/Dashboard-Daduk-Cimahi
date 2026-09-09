@@ -1,8 +1,12 @@
 @props([])
 @php
-    // Logo aplikasi dipakai di navbar SEMUA halaman publik, jadi diambil di sini
-    // (bukan lewat prop tiap controller) supaya konsisten di manapun.
-    $__logoUrl = \App\Models\PengaturanTampilan::current()->logo_url;
+    // Nama sistem/instansi & logo dipakai di navbar SEMUA halaman publik, jadi
+    // diambil di sini (bukan lewat prop tiap controller) supaya konsisten di
+    // manapun. Semuanya bisa diubah Petugas lewat menu "Tampilan Sistem".
+    $__pengaturan   = \App\Models\PengaturanTampilan::current();
+    $__logoUrl      = $__pengaturan->logo_url;
+    $__namaSistem   = $__pengaturan->nama_sistem_tampil;
+    $__namaInstansi = $__pengaturan->nama_instansi_tampil;
 @endphp
 <!DOCTYPE html>
 <html lang="id" class="scroll-smooth">
@@ -10,7 +14,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ $title ?? 'DADUK' }} — Disdukcapil Kota Cimahi</title>
+    <title>{{ $title ?? $__namaSistem }} — {{ $__namaInstansi }}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
@@ -33,15 +37,15 @@
                 {{-- Brand --}}
                 <a href="{{ route('dashboard.publik') }}" class="flex items-center gap-3 min-w-0">
                     @if ($__logoUrl)
-                        <img src="{{ $__logoUrl }}" alt="Logo" class="w-9 h-9 rounded-xl object-cover flex-shrink-0">
+                        <img src="{{ $__logoUrl }}" alt="Logo {{ $__namaSistem }}" class="w-9 h-9 object-contain flex-shrink-0">
                     @else
                         <div class="w-9 h-9 bg-white/10 rounded-xl flex items-center justify-center flex-shrink-0">
                             <span class="text-white text-xs font-black tracking-tight">DC</span>
                         </div>
                     @endif
                     <div class="hidden sm:block">
-                        <p class="text-sm font-bold leading-tight text-white">DADUK</p>
-                        <p class="text-[10px] leading-tight text-white/60">Disdukcapil Kota Cimahi</p>
+                        <p class="text-sm font-bold leading-tight text-white">{{ $__namaSistem }}</p>
+                        <p class="text-[10px] leading-tight text-white/60">{{ $__namaInstansi }}</p>
                     </div>
                 </a>
 
@@ -117,7 +121,7 @@
     <footer class="bg-brand-900 mt-12">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
             <div class="flex flex-col md:flex-row items-center justify-between gap-3 text-xs text-white/60">
-                <p>Dashboard Data Agregat Penduduk Kota Cimahi — Disdukcapil Kota Cimahi © {{ date('Y') }}</p>
+                <p>{{ $__namaSistem }} — {{ $__namaInstansi }} © {{ date('Y') }}</p>
                 <div class="flex items-center gap-4">
                     <p>Seluruh data bersifat <strong class="text-white/80">agregat/rekap</strong> — bukan data personal.</p>
                     <a href="{{ route('metadata.index') }}" class="text-white/80 hover:text-white font-medium underline-offset-2 hover:underline">

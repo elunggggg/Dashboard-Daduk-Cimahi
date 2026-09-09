@@ -8,7 +8,8 @@
         <div>
             <h2 class="text-lg font-bold text-gray-900">{{ $indikator->label }}</h2>
             <p class="text-sm text-gray-500">
-                <code class="text-xs bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded font-mono">{{ $indikator->jenis_indikator }}</code>
+                Kelompok <span class="font-medium text-gray-700">{{ $indikator->jenis_terbaca }}</span>
+                <code class="text-[11px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded font-mono">{{ $indikator->jenis_indikator }}</code>
                 · {{ $data->count() }} baris data
             </p>
         </div>

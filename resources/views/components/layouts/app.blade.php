@@ -1,3 +1,9 @@
+@php
+    // Nama sistem/instansi & logo bisa diubah Petugas lewat menu "Tampilan Sistem".
+    $__pengaturan  = \App\Models\PengaturanTampilan::current();
+    $__namaSistem  = $__pengaturan->nama_sistem_tampil;
+    $__namaInstansi = $__pengaturan->nama_instansi_tampil;
+@endphp
 <!DOCTYPE html>
 <html lang="id" class="h-full">
 
@@ -5,7 +11,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>{{ $title ?? 'Dashboard' }} — DADUK Disdukcapil Cimahi</title>
+    <title>{{ $title ?? 'Dashboard' }} — {{ $__namaSistem }} {{ $__namaInstansi }}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
@@ -46,18 +52,18 @@
                transition-transform duration-300 ease-in-out lg:translate-x-0"
         :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'">
         {{-- Brand --}}
-        @php $__logoUrl = \App\Models\PengaturanTampilan::current()->logo_url; @endphp
+        @php $__logoUrl = $__pengaturan->logo_url; @endphp
         <div class="sidebar-brand flex items-center gap-3 h-16 px-5 border-b border-white/10 flex-shrink-0">
             @if ($__logoUrl)
-                <img src="{{ $__logoUrl }}" alt="Logo" class="w-9 h-9 rounded-xl object-cover flex-shrink-0">
+                <img src="{{ $__logoUrl }}" alt="Logo {{ $__namaSistem }}" class="w-9 h-9 object-contain flex-shrink-0">
             @else
                 <div class="w-9 h-9 bg-brand-600 rounded-xl flex items-center justify-center flex-shrink-0">
                     <span class="text-white text-xs font-black">DC</span>
                 </div>
             @endif
             <div class="sidebar-label min-w-0">
-                <p class="text-white text-sm font-bold leading-tight truncate">DADUK</p>
-                <p class="text-slate-400 text-[10px] leading-tight truncate">Disdukcapil Kota Cimahi</p>
+                <p class="text-white text-sm font-bold leading-tight truncate">{{ $__namaSistem }}</p>
+                <p class="text-slate-400 text-[10px] leading-tight truncate">{{ $__namaInstansi }}</p>
             </div>
         </div>
 
@@ -84,7 +90,7 @@
                         ['route' => 'petugas.metadata.index', 'label' => 'Kelola Metadata', 'icon' => 'bi-book'],
                         ['route' => 'petugas.indikator.index', 'label' => 'Kelola Indikator', 'icon' => 'bi-list-check'],
                         ['route' => 'petugas.konfigurasi-import.index', 'label' => 'Konfigurasi Import', 'icon' => 'bi-diagram-3'],
-                        ['route' => 'petugas.pengaturan.edit', 'label' => 'Tampilan Dash', 'icon' => 'bi-image'],
+                        ['route' => 'petugas.pengaturan.edit', 'label' => 'Tampilan Sistem', 'icon' => 'bi-image'],
                         ['route' => 'petugas.audit.index', 'label' => 'Audit Log', 'icon' => 'bi-journal-text'],
                         ['route' => 'petugas.backup.index', 'label' => 'Backup Database', 'icon' => 'bi-database-check'],
                     ];

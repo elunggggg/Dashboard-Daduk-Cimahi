@@ -3,28 +3,41 @@
 <div class="grid gap-4 sm:grid-cols-2">
 
     <div>
-        <label for="jenis_indikator" class="form-label">Jenis Indikator <span class="text-red-500">*</span></label>
+        <label for="jenis_indikator" class="form-label">Kelompok Indikator <span class="text-red-500">*</span></label>
         <input type="text" name="jenis_indikator" id="jenis_indikator" list="jenis_indikator_list"
                value="{{ old('jenis_indikator', $indikator?->jenis_indikator) }}"
                placeholder="mis. agama" required
                class="form-input font-mono @error('jenis_indikator') border-red-400 @enderror">
         <datalist id="jenis_indikator_list">
             @foreach($jenisList as $j)
-                <option value="{{ $j }}">
+                <option value="{{ $j }}">{{ \Illuminate\Support\Str::headline($j) }}</option>
             @endforeach
         </datalist>
+        <p class="mt-1 text-xs text-gray-500">
+            Kode yang menyatukan beberapa kategori ke dalam satu grafik — mis. <code class="font-mono">agama</code>
+            memuat Islam, Kristen, Katolik, dst.
+        </p>
         <p class="mt-1 text-xs text-gray-400">
-            Pilih jenis yang sudah ada supaya indikator ini muncul sekelompok, atau ketik baru untuk membuat kelompok baru.
+            Pilih kode yang sudah ada supaya kategori ini ikut ke grafik yang sama. Ketik kode baru
+            hanya bila memang ingin membuat grafik baru. Gunakan huruf kecil dan garis bawah, tanpa spasi
+            (mis. <code class="font-mono">kepemilikan_ktp</code>).
         </p>
         @error('jenis_indikator') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
     </div>
 
     <div>
-        <label for="label" class="form-label">Label <span class="text-red-500">*</span></label>
+        <label for="label" class="form-label">Nama Kategori <span class="text-red-500">*</span></label>
         <input type="text" name="label" id="label"
                value="{{ old('label', $indikator?->label) }}" required
+               placeholder="mis. Islam"
                class="form-input @error('label') border-red-400 @enderror">
-        <p class="mt-1 text-xs text-gray-400">Teks yang tampil di legenda grafik dan tabel dashboard.</p>
+        <p class="mt-1 text-xs text-gray-500">
+            Teks yang dibaca pengunjung di legenda grafik, tabel, dan tooltip dashboard.
+        </p>
+        <p class="mt-1 text-xs text-gray-400">
+            Tulis dengan kapitalisasi wajar dan boleh pakai spasi — mis. <em>Laki-laki</em>,
+            <em>Usia 0&ndash;4 tahun</em>, <em>Belum Memiliki Akta Lahir</em>.
+        </p>
         @error('label') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
     </div>
 
@@ -33,7 +46,7 @@
         <input type="number" name="urutan" id="urutan" min="0" max="9999"
                value="{{ old('urutan', $indikator?->urutan ?? 0) }}" required
                class="form-input @error('urutan') border-red-400 @enderror">
-        <p class="mt-1 text-xs text-gray-400">Angka lebih kecil tampil lebih dulu di antara indikator sejenis.</p>
+        <p class="mt-1 text-xs text-gray-400">Angka lebih kecil tampil lebih dulu di antara kategori dalam kelompok yang sama.</p>
         @error('urutan') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
     </div>
 

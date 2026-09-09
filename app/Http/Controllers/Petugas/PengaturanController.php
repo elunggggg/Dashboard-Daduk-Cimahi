@@ -29,6 +29,10 @@ class PengaturanController extends Controller
         $pengaturan = PengaturanTampilan::current();
         $sebelum    = $pengaturan->getAttributes();
 
+        // Kosong = kembali ke teks bawaan (disimpan null, bukan string kosong).
+        $pengaturan->nama_sistem   = trim((string) $request->input('nama_sistem')) ?: null;
+        $pengaturan->nama_instansi = trim((string) $request->input('nama_instansi')) ?: null;
+
         $this->terapkanUnggahan($request, $pengaturan, 'latar_belakang', 'hapus_latar');
         $this->terapkanUnggahan($request, $pengaturan, 'logo', 'hapus_logo');
 
@@ -38,7 +42,7 @@ class PengaturanController extends Controller
 
         return redirect()
             ->route('petugas.pengaturan.edit')
-            ->with('success', 'Tampilan Dashboard Publik berhasil diperbarui.');
+            ->with('success', 'Tampilan Sistem berhasil diperbarui.');
     }
 
     /**
