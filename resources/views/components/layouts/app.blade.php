@@ -90,7 +90,7 @@
                         ['route' => 'petugas.metadata.index', 'label' => 'Kelola Metadata', 'icon' => 'bi-book'],
                         ['route' => 'petugas.indikator.index', 'label' => 'Kelola Indikator', 'icon' => 'bi-list-check'],
                         ['route' => 'petugas.seksi.index', 'label' => 'Bagian Dashboard', 'icon' => 'bi-ui-checks-grid'],
-                        ['route' => 'petugas.konfigurasi-import.index', 'label' => 'Konfigurasi Import', 'icon' => 'bi-diagram-3'],
+                        ['route' => 'petugas.konfigurasi-export.index', 'label' => 'Konfigurasi Export', 'icon' => 'bi-file-earmark-arrow-down'],
                         ['route' => 'petugas.pengaturan.edit', 'label' => 'Tampilan Sistem', 'icon' => 'bi-image'],
                         ['route' => 'petugas.audit.index', 'label' => 'Audit Log', 'icon' => 'bi-journal-text'],
                         ['route' => 'petugas.backup.index', 'label' => 'Backup Database', 'icon' => 'bi-database-check'],

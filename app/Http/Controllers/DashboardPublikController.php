@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\KategoriPublikController;
 use App\Models\DimKategori;
 use App\Models\DimWaktu;
 use App\Models\Metadata;
+use App\Models\PengaturanExport;
 use App\Models\PengaturanTampilan;
 use App\Services\DashboardHalaman;
 use App\Services\FilterWilayahService;
@@ -48,6 +49,8 @@ class DashboardPublikController extends Controller
         // ke halaman "dashboard". Se-Kota, periode terbaru (tanpa filter di sini).
         $grid = $this->halaman->susun('dashboard', $request);
 
+        $pengaturanExport = PengaturanExport::current();
+
         return view('dashboard-publik.index', [
             'kontenGrid'        => $grid['kontenHtml'],
             'gridCharts'        => $grid['charts'],
@@ -63,6 +66,9 @@ class DashboardPublikController extends Controller
             // Pilihan indikator Ekspor: kode → nama terbaca (pakai nama Metadata
             // kalau ada, kalau tidak "manusiakan" kodenya), diurutkan A–Z nama.
             'eksporIndikatorList' => $this->pilihanIndikatorEkspor(),
+            // Bawaan format & batas PDF dari Konfigurasi Export.
+            'eksporFormatBawaan' => $pengaturanExport->format_bawaan,
+            'eksporBatasPdf'     => $pengaturanExport->batas_baris_pdf,
             'defaultWaktuId1'   => $defaultWaktuId1,
             'defaultWaktuId2'   => $defaultWaktuId2,
         ]);
@@ -83,7 +89,14 @@ class DashboardPublikController extends Controller
             'lpp'           => 'laju_pertumbuhan_penduduk',
         ];
 
-        return DimKategori::query()->distinct()->pluck('jenis_indikator')
+        $semua = DimKategori::query()->distinct()->pluck('jenis_indikator');
+
+        return $semua
+            // Sembunyikan varian rincian jenis kelamin ({jenis}_l / {jenis}_p)
+            // bila indikator induknya ada — ekspor induknya kini otomatis
+            // memuat kolom Laki-laki & Perempuan (lihat DataAgregatExport).
+            ->reject(fn (string $j) => (str_ends_with($j, '_l') || str_ends_with($j, '_p'))
+                && $semua->contains(substr($j, 0, -2)))
             ->mapWithKeys(function (string $j) use ($metaNama, $bentang) {
                 $nama = $metaNama->get($j)
                     ?? Str::headline(str_replace(array_keys($bentang), array_values($bentang), $j));

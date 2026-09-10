@@ -3,6 +3,8 @@
 namespace App\Exports;
 
 use App\Models\DataAgregat;
+use App\Models\DimKategori;
+use App\Models\KonfigurasiExport;
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
@@ -18,8 +20,22 @@ use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
+/**
+ * Ekspor data agregat ke Excel/PDF. Kolom, urutan, label header, dan format
+ * angka DIAMBIL DARI tabel konfigurasi_export (dikelola Petugas lewat halaman
+ * "Konfigurasi Export") — bukan lagi hardcode di sini.
+ *
+ * Baris keluaran diseragamkan menjadi array asosiatif [kunci_kolom => nilai]
+ * lewat barisTampil() supaya Excel (map()) dan PDF (blade) memakai sumber yang
+ * sama persis.
+ */
 class DataAgregatExport implements FromCollection, WithHeadings, WithMapping, WithTitle, WithStyles, ShouldAutoSize, WithColumnFormatting, WithEvents
 {
+    /** Cache per-request: apakah sebuah jenis_indikator punya pasangan _l / _p. */
+    private static array $cekRincianJk = [];
+
+    private ?Collection $kolomAktifCache = null;
+
     public function __construct(
         private readonly ?int $waktuId = null,
         private readonly ?string $kecamatan = null,
@@ -27,13 +43,164 @@ class DataAgregatExport implements FromCollection, WithHeadings, WithMapping, Wi
     ) {
     }
 
-    public function collection(): Collection
+    /**
+     * True bila indikator terpilih punya rincian jenis kelamin ({jenis}_l &
+     * {jenis}_p) — ekspornya lalu ikut memuat kolom "Laki-laki"/"Perempuan"
+     * (satu baris per wilayah+periode+kategori), bukan satu baris per angka.
+     */
+    public static function punyaRincianJk(?string $jenis): bool
     {
-        return static::query($this->waktuId, $this->kecamatan, $this->jenisIndikator)->get();
+        if ($jenis === null || $jenis === '' || str_ends_with($jenis, '_l') || str_ends_with($jenis, '_p')) {
+            return false;
+        }
+
+        return self::$cekRincianJk[$jenis] ??= DimKategori::query()
+            ->whereIn('jenis_indikator', [$jenis.'_l', $jenis.'_p'])
+            ->distinct()
+            ->count('jenis_indikator') === 2;
     }
 
     /**
-     * Dipakai bersama oleh ekspor Excel dan PDF supaya angka keduanya identik.
+     * Kolom yang benar-benar ikut diekspor: konfigurasi aktif (terurut), minus
+     * kolom Laki-laki/Perempuan bila indikator terpilih tidak punya rincian JK.
+     *
+     * @return Collection<int, KonfigurasiExport>
+     */
+    public function kolomAktif(): Collection
+    {
+        if ($this->kolomAktifCache !== null) {
+            return $this->kolomAktifCache;
+        }
+
+        $lp = static::punyaRincianJk($this->jenisIndikator);
+
+        $kolom = KonfigurasiExport::terurut()
+            ->reject(fn (KonfigurasiExport $k) => in_array($k->kunci, KonfigurasiExport::KUNCI_RINCIAN_JK, true) && ! $lp)
+            ->values();
+
+        // Pengaman: kalau Petugas menonaktifkan semua kolom, jangan hasilkan
+        // berkas kosong — pakai seluruh kolom yang dikenal apa adanya.
+        if ($kolom->isEmpty()) {
+            $kolom = KonfigurasiExport::query()->orderBy('urutan')->orderBy('id')->get()
+                ->reject(fn (KonfigurasiExport $k) => in_array($k->kunci, KonfigurasiExport::KUNCI_RINCIAN_JK, true) && ! $lp)
+                ->values();
+        }
+
+        return $this->kolomAktifCache = $kolom;
+    }
+
+    // ── Sumber baris (dipakai Excel & PDF) ───────────────────────────────────
+
+    public function collection(): Collection
+    {
+        return $this->barisTampil();
+    }
+
+    /**
+     * Baris siap tampil: array asosiatif [kunci_kolom => nilai], HANYA kolom
+     * aktif, dalam urutan konfigurasi.
+     *
+     * @return Collection<int, array<string, mixed>>
+     */
+    public function barisTampil(): Collection
+    {
+        $kolom = $this->kolomAktif();
+
+        return $this->barisPenuh()->map(function (array $penuh) use ($kolom) {
+            $out = [];
+            foreach ($kolom as $k) {
+                $out[$k->kunci] = $penuh[$k->kunci] ?? null;
+            }
+
+            return $out;
+        })->values();
+    }
+
+    /**
+     * Setiap baris dengan SELURUH field yang mungkin (9 kunci) terisi — proyeksi
+     * ke kolom aktif dikerjakan barisTampil().
+     *
+     * @return Collection<int, array<string, mixed>>
+     */
+    private function barisPenuh(): Collection
+    {
+        if (static::punyaRincianJk($this->jenisIndikator)) {
+            return $this->barisRincianJk();
+        }
+
+        return static::query($this->waktuId, $this->kecamatan, $this->jenisIndikator)->get()
+            ->map(fn (DataAgregat $r) => [
+                'kode_wilayah' => $r->wilayah->kode_kemendagri ?? '—',
+                'kecamatan'    => $r->wilayah->nama_kecamatan ?? '—',
+                'kelurahan'    => $r->wilayah->nama_kelurahan ?? '—',
+                'periode'      => $r->waktu->label ?? '—',
+                'indikator'    => $r->kategori->jenis_indikator ?? '—',
+                'kategori'     => $r->kategori->label ?? '—',
+                'laki'         => null,
+                'perempuan'    => null,
+                'jumlah'       => (int) $r->jumlah,
+            ]);
+    }
+
+    /**
+     * Ekspor "L/P": gabungkan baris {jenis}, {jenis}_l, {jenis}_p menjadi SATU
+     * baris per (wilayah, periode, kategori) dengan angka Laki-laki / Perempuan
+     * / Jumlah.
+     *
+     * @return Collection<int, array<string, mixed>>
+     */
+    public function barisRincianJk(): Collection
+    {
+        $jenisSet = [$this->jenisIndikator, $this->jenisIndikator.'_l', $this->jenisIndikator.'_p'];
+
+        $rows = DataAgregat::query()
+            ->with([
+                'wilayah:id,kode_kemendagri,nama_kelurahan,nama_kecamatan',
+                'waktu:id,label',
+                'kategori:id,jenis_indikator,label',
+            ])
+            ->whereHas('kategori', fn ($k) => $k->whereIn('jenis_indikator', $jenisSet))
+            ->when($this->waktuId, fn ($q) => $q->where('waktu_id', $this->waktuId))
+            ->when($this->kecamatan, fn ($q) => $q->whereHas('wilayah', fn ($w) => $w->where('nama_kecamatan', $this->kecamatan)))
+            ->get();
+
+        $kolom = fn (string $j) => str_ends_with($j, '_l') ? 'laki'
+            : (str_ends_with($j, '_p') ? 'perempuan' : 'jumlah');
+
+        return $rows
+            ->groupBy(fn ($r) => $r->wilayah_id.'|'.$r->waktu_id.'|'.$r->kategori->label)
+            ->map(function (Collection $grup) use ($kolom) {
+                $acuan = $grup->first();
+                $baris = [
+                    'kode_wilayah' => $acuan->wilayah->kode_kemendagri ?? '—',
+                    'kecamatan'    => $acuan->wilayah->nama_kecamatan ?? '—',
+                    'kelurahan'    => $acuan->wilayah->nama_kelurahan ?? '—',
+                    'periode'      => $acuan->waktu->label ?? '—',
+                    'indikator'    => $this->jenisIndikator,
+                    'kategori'     => $acuan->kategori->label ?? '—',
+                    'laki'         => 0,
+                    'perempuan'    => 0,
+                    'jumlah'       => 0,
+                ];
+
+                foreach ($grup as $r) {
+                    $baris[$kolom($r->kategori->jenis_indikator)] = (int) $r->jumlah;
+                }
+
+                return $baris;
+            })
+            ->sortBy([
+                fn ($a) => $a['kecamatan'],
+                fn ($a) => $a['kelurahan'],
+                fn ($a) => (int) filter_var($a['kategori'], FILTER_SANITIZE_NUMBER_INT),
+                fn ($a) => $a['kategori'],
+            ])
+            ->values();
+    }
+
+    /**
+     * Query mentah (baris data_agregat) — dipakai EksporController untuk
+     * menghitung total baris sebelum memutuskan format & batas PDF.
      */
     public static function query(?int $waktuId, ?string $kecamatan, ?string $jenisIndikator)
     {
@@ -51,22 +218,17 @@ class DataAgregatExport implements FromCollection, WithHeadings, WithMapping, Wi
             ->select('data_agregat.*');
     }
 
+    // ── Bentuk berkas ───────────────────────────────────────────────────────
+
     public function headings(): array
     {
-        return ['Kode Wilayah', 'Kecamatan', 'Kelurahan', 'Periode', 'Indikator', 'Kategori', 'Jumlah'];
+        return $this->kolomAktif()->pluck('label')->all();
     }
 
+    /** $row selalu array [kunci => nilai] hasil barisTampil() — sudah urut kolom. */
     public function map($row): array
     {
-        return [
-            $row->wilayah->kode_kemendagri ?? '—',
-            $row->wilayah->nama_kecamatan ?? '—',
-            $row->wilayah->nama_kelurahan ?? '—',
-            $row->waktu->label ?? '—',
-            $row->kategori->jenis_indikator ?? '—',
-            $row->kategori->label ?? '—',
-            (int) $row->jumlah,
-        ];
+        return array_values($row);
     }
 
     public function title(): string
@@ -86,15 +248,24 @@ class DataAgregatExport implements FromCollection, WithHeadings, WithMapping, Wi
         ];
     }
 
-    /** Kolom "Jumlah" (G) pakai format ribuan bawaan Excel (tanpa desimal — ini
-     *  cacah jiwa, bukan uang), bukan teks polos. */
+    /** Kolom ber-format "angka" (di konfigurasi_export) → format ribuan Excel. */
     public function columnFormats(): array
     {
-        return ['G' => '#,##0'];
+        $formats = [];
+        $huruf = 'A';
+
+        foreach ($this->kolomAktif() as $k) {
+            if ($k->format === KonfigurasiExport::FORMAT_ANGKA) {
+                $formats[$huruf] = '#,##0';
+            }
+
+            $huruf++;
+        }
+
+        return $formats;
     }
 
-    /** Border tipis seluruh tabel + baris header dibekukan + autofilter — dikerjakan
-     *  lewat event (bukan concern statis) karena butuh tahu jumlah baris/kolom akhir. */
+    /** Border tipis seluruh tabel + baris header dibekukan + autofilter. */
     public function registerEvents(): array
     {
         return [

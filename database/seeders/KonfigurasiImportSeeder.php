@@ -967,9 +967,10 @@ class KonfigurasiImportSeeder extends Seeder
             $this->simpan('UmurTunggal', 'umur_tunggal_p', "Umur {$umur} Tahun", (string) $umur, 1, KonfigurasiImport::ORIENTASI_KOLOM_URUT);
         }
 
-        // Usia 0 tahun L/P — melengkapi umur_tunggal_l/_p supaya piramida umur
-        // tunggal utuh 0-99 (baris "0" di sheet yang sama; nilainya sama dengan
-        // rincian L/P dari 'kelahiran_proxy', hanya diberi label seragam).
+        // Usia 0 tahun — melengkapi umur_tunggal (& _l/_p) supaya deret umur
+        // tunggal utuh 0-99 di TABEL maupun EKSPOR (bukan cuma disisipkan di
+        // DemografiController dari 'kelahiran_proxy'). Baris "0" sheet yang sama.
+        $this->simpan('UmurTunggal', 'umur_tunggal',   'Umur 0 Tahun', '0', 2, KonfigurasiImport::ORIENTASI_KOLOM_URUT);
         $this->simpan('UmurTunggal', 'umur_tunggal_l', 'Umur 0 Tahun', '0', 0, KonfigurasiImport::ORIENTASI_KOLOM_URUT);
         $this->simpan('UmurTunggal', 'umur_tunggal_p', 'Umur 0 Tahun', '0', 1, KonfigurasiImport::ORIENTASI_KOLOM_URUT);
 

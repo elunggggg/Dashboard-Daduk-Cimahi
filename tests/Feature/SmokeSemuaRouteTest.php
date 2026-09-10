@@ -32,7 +32,7 @@ class SmokeSemuaRouteTest extends TestCase
             ['/petugas/pengguna'], ['/petugas/pengguna/create'],
             ['/petugas/metadata'], ['/petugas/metadata/create'],
             ['/petugas/indikator'], ['/petugas/indikator/create'],
-            ['/petugas/konfigurasi-import'], ['/petugas/konfigurasi-import/uji'],
+            ['/petugas/konfigurasi-export'],
             ['/petugas/audit'],
             ['/petugas/pengaturan'],
         ];

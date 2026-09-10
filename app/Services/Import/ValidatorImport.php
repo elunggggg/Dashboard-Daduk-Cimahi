@@ -11,9 +11,8 @@ namespace App\Services\Import;
  *
  * Di sini validasi struktur dipanggil SEKALI per sheet, sebelum baris mana pun
  * dibaca. Setiap pesan wajib menyebut nama sheet dan label yang bermasalah,
- * plus apa yang sebenarnya dicari sistem — supaya Petugas bisa langsung
- * memperbaikinya sendiri lewat halaman Konfigurasi Import tanpa bertanya ke
- * pengembang.
+ * plus apa yang sebenarnya dicari sistem — supaya jelas bagian pemetaan import
+ * (KonfigurasiImportSeeder) mana yang perlu disesuaikan pengembang.
  */
 class ValidatorImport
 {
@@ -42,7 +41,7 @@ class ValidatorImport
         $this->galat[] = "Sheet '{$sheet}' tidak ada di dalam berkas. "
             ."Sheet yang tersedia antara lain: ".implode(', ', $contoh)
             .(count($sheetTersedia) > 8 ? ', …' : '').'. '
-            .'Perbaiki nama sheet di menu Konfigurasi Import bila Disdukcapil menggantinya.';
+            .'Bila Disdukcapil mengganti nama sheet, pemetaan import perlu disesuaikan pengembang.';
     }
 
     /**
@@ -74,7 +73,7 @@ class ValidatorImport
     {
         $this->galat[] = "Sheet '{$sheet}': teks header '{$teksDicari}' untuk label '{$label}' "
             .'cocok dengan lebih dari satu kolom, sehingga tidak bisa dipastikan mana yang benar. '
-            .'Buat teks headernya lebih spesifik di menu Konfigurasi Import.';
+            .'Teks header pada pemetaan import perlu dibuat lebih spesifik oleh pengembang.';
     }
 
     /**
@@ -199,7 +198,7 @@ class ValidatorImport
     public function tidakAdaKonfigurasi(string $profil): void
     {
         $this->galat[] = "Profil '{$profil}' tidak punya satu pun pemetaan aktif. "
-            .'Aktifkan minimal satu baris di menu Konfigurasi Import sebelum mengimpor.';
+            .'Pemetaan import untuk profil ini belum tersedia — hubungi pengembang.';
     }
 
     public function periodeTidakTerdeteksi(): void

@@ -14,6 +14,7 @@ class DatabaseSeeder extends Seeder
             AliasWilayahSeeder::class,
             DimKategoriSeeder::class,
             KonfigurasiImportSeeder::class,
+            KonfigurasiExportSeeder::class,
             MetadataSeeder::class,
             UserSeeder::class,
         ]);

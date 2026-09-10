@@ -4,7 +4,7 @@ use App\Http\Controllers\Petugas\AuditLogController;
 use App\Http\Controllers\Petugas\BackupController;
 use App\Http\Controllers\Petugas\ImportController;
 use App\Http\Controllers\Petugas\IndikatorController;
-use App\Http\Controllers\Petugas\KonfigurasiImportController;
+use App\Http\Controllers\Petugas\KonfigurasiExportController;
 use App\Http\Controllers\Petugas\MetadataController as AdminMetadataController;
 use App\Http\Controllers\Petugas\PengaturanController;
 use App\Http\Controllers\Petugas\PenggunaController;
@@ -84,11 +84,14 @@ Route::middleware('auth')->group(function () {
         Route::post('/bagian-dashboard/reset', [\App\Http\Controllers\Petugas\SeksiDashboardController::class, 'reset'])->name('seksi.reset');
         Route::patch('/bagian-dashboard/{seksi}', [\App\Http\Controllers\Petugas\SeksiDashboardController::class, 'atur'])->name('seksi.atur');
 
-        // Statis didaftarkan sebelum resource supaya '/konfigurasi-import/uji'
-        // tidak tertangkap sebagai '/konfigurasi-import/{konfigurasi_import}'.
-        Route::get('/konfigurasi-import/uji',  [KonfigurasiImportController::class, 'uji'])->name('konfigurasi-import.uji');
-        Route::post('/konfigurasi-import/uji', [KonfigurasiImportController::class, 'ujiProses'])->name('konfigurasi-import.uji-proses');
-        Route::resource('konfigurasi-import', KonfigurasiImportController::class)->except(['show']);
+        // ── Konfigurasi Export — atur kolom & format berkas ekspor ────────────
+        // Rute statis didaftarkan sebelum yang berparameter agar 'pengaturan'
+        // & 'reset' tidak tertangkap sebagai '{konfigurasi_export}'.
+        Route::get('/konfigurasi-export',              [KonfigurasiExportController::class, 'index'])->name('konfigurasi-export.index');
+        Route::patch('/konfigurasi-export/pengaturan', [KonfigurasiExportController::class, 'simpanPengaturan'])->name('konfigurasi-export.pengaturan');
+        Route::post('/konfigurasi-export/reset',       [KonfigurasiExportController::class, 'reset'])->name('konfigurasi-export.reset');
+        Route::patch('/konfigurasi-export/{konfigurasi_export}', [KonfigurasiExportController::class, 'atur'])->name('konfigurasi-export.atur');
+
         Route::get('/audit', AuditLogController::class)->name('audit.index');
 
         // ── Pengaturan Tampilan Dashboard Publik ──────────────────────────────────────

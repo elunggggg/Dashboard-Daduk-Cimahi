@@ -2,7 +2,11 @@
      mendukung flexbox/grid maupun stylesheet Tailwind hasil build. Palet &
      bahasa visual disamakan dengan laporan/profil-pdf.blade.php (navy
      #1E3A5F + aksen teal #0D9488) supaya kedua jenis ekspor PDF terasa satu
-     keluarga, bukan dua gaya berbeda. --}}
+     keluarga, bukan dua gaya berbeda.
+
+     Kolom ($kolom) & kop ($kopJudul/$kopSubjudul) berasal dari Konfigurasi
+     Export. $baris = array asosiatif [kunci_kolom => nilai] dari
+     DataAgregatExport::barisTampil() — sama persis dengan sumber Excel. --}}
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -36,8 +40,8 @@
 <body>
 
     <div class="kop">
-        <p class="judul">DADUK Cimahi — Dashboard Data Agregat Penduduk</p>
-        <p class="subjudul">Dinas Kependudukan dan Pencatatan Sipil Kota Cimahi</p>
+        <p class="judul">{{ $kopJudul }}</p>
+        <p class="subjudul">{{ $kopSubjudul }}</p>
     </div>
     <div class="aksen"></div>
 
@@ -50,25 +54,22 @@
     <table>
         <thead>
             <tr>
-                <th>Kode</th>
-                <th>Kecamatan</th>
-                <th>Kelurahan</th>
-                <th>Periode</th>
-                <th>Indikator</th>
-                <th>Kategori</th>
-                <th class="num">Jumlah</th>
+                @foreach ($kolom as $k)
+                    <th @class(['num' => $k->format === \App\Models\KonfigurasiExport::FORMAT_ANGKA])>{{ $k->label }}</th>
+                @endforeach
             </tr>
         </thead>
         <tbody>
             @foreach($baris as $b)
                 <tr>
-                    <td>{{ $b->wilayah->kode_kemendagri ?? '—' }}</td>
-                    <td>{{ $b->wilayah->nama_kecamatan ?? '—' }}</td>
-                    <td>{{ $b->wilayah->nama_kelurahan ?? '—' }}</td>
-                    <td>{{ $b->waktu->label ?? '—' }}</td>
-                    <td>{{ $b->kategori->jenis_indikator ?? '—' }}</td>
-                    <td>{{ $b->kategori->label ?? '—' }}</td>
-                    <td class="num">{{ number_format($b->jumlah, 0, ',', '.') }}</td>
+                    @foreach ($kolom as $k)
+                        @php $nilai = $b[$k->kunci] ?? null; @endphp
+                        @if ($k->format === \App\Models\KonfigurasiExport::FORMAT_ANGKA)
+                            <td class="num">{{ $nilai === null ? '—' : number_format((int) $nilai, 0, ',', '.') }}</td>
+                        @else
+                            <td>{{ $nilai === null || $nilai === '' ? '—' : $nilai }}</td>
+                        @endif
+                    @endforeach
                 </tr>
             @endforeach
         </tbody>

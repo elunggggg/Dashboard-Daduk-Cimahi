@@ -103,8 +103,8 @@
                             <div class="flex-1 min-w-[150px]">
                                 <label class="block text-[11px] font-medium text-gray-500 mb-1">Format berkas</label>
                                 <select name="format" class="form-select text-xs py-2 w-full">
-                                    <option value="excel">Excel (.xlsx)</option>
-                                    <option value="pdf">PDF (maks. 3.000 baris)</option>
+                                    <option value="excel" @selected(($eksporFormatBawaan ?? 'excel') === 'excel')>Excel (.xlsx)</option>
+                                    <option value="pdf" @selected(($eksporFormatBawaan ?? 'excel') === 'pdf')>PDF (maks. {{ number_format($eksporBatasPdf ?? 3000, 0, ',', '.') }} baris)</option>
                                 </select>
                             </div>
 

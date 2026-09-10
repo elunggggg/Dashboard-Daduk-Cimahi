@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Exports\DataAgregatExport;
 use App\Models\Laporan;
+use App\Models\PengaturanExport;
 use App\Services\AuditLogService;
 use App\Services\FilterWilayahService;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -19,10 +20,6 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
  */
 class EksporController extends Controller
 {
-    // Batas baris untuk PDF — dompdf menyusun seluruh dokumen di memori,
-    // ribuan baris membuatnya sangat lambat atau kehabisan memori.
-    private const BATAS_BARIS_PDF = 3000;
-
     public function __construct(
         private readonly FilterWilayahService $filter,
         private readonly AuditLogService $audit,
@@ -45,18 +42,21 @@ class EksporController extends Controller
         $kecamatan = ($data['kecamatan'] ?? null) ?: null;
         $indikator = ($data['jenis_indikator'] ?? null) ?: null;
 
-        $query = DataAgregatExport::query($waktuId, $kecamatan, $indikator);
-        $total = (clone $query)->count();
+        $pengaturan = PengaturanExport::current();
+
+        $export = new DataAgregatExport($waktuId, $kecamatan, $indikator);
+        $query  = DataAgregatExport::query($waktuId, $kecamatan, $indikator);
+        $total  = (clone $query)->count();
 
         if ($total === 0) {
             return back()->with('error', 'Tidak ada data yang cocok dengan filter — tidak ada yang diekspor.');
         }
 
         // Diperiksa sebelum apa pun dicatat — ekspor yang ditolak tidak boleh
-        // muncul di riwayat laporan seolah-olah berhasil.
-        if ($data['format'] === 'pdf' && $total > self::BATAS_BARIS_PDF) {
+        // muncul di riwayat laporan seolah-olah berhasil. Batas dari Konfigurasi Export.
+        if ($data['format'] === 'pdf' && $total > $pengaturan->batas_baris_pdf) {
             return back()->with('error',
-                "Hasil filter {$total} baris, melebihi batas ".self::BATAS_BARIS_PDF.' baris untuk PDF. '
+                "Hasil filter {$total} baris, melebihi batas {$pengaturan->batas_baris_pdf} baris untuk PDF. "
                 .'Persempit filter atau gunakan format Excel.');
         }
 
@@ -69,19 +69,21 @@ class EksporController extends Controller
         ]);
 
         if ($data['format'] === 'excel') {
-            return Excel::download(
-                new DataAgregatExport($waktuId, $kecamatan, $indikator),
-                "data-agregat-{$stamp}.xlsx",
-            );
+            return Excel::download($export, "data-agregat-{$stamp}.xlsx");
         }
 
+        $orientasiPdf = $pengaturan->orientasi_pdf === 'potrait' ? 'portrait' : 'landscape';
+
         $pdf = Pdf::loadView('ekspor.pdf', [
-            'judul'     => $judul,
-            'baris'     => $query->get(),
-            'dicetak'   => now(),
-            'oleh'      => $request->user()->name ?? 'Publik',
-            'total'     => $total,
-        ])->setPaper('a4', 'landscape');
+            'judul'       => $judul,
+            'kolom'       => $export->kolomAktif(),
+            'baris'       => $export->barisTampil(),
+            'kopJudul'    => $pengaturan->kop_judul_tampil,
+            'kopSubjudul' => $pengaturan->kop_subjudul_tampil,
+            'dicetak'     => now(),
+            'oleh'        => $request->user()->name ?? 'Publik',
+            'total'       => $total,
+        ])->setPaper('a4', $orientasiPdf);
 
         return $pdf->download("data-agregat-{$stamp}.pdf");
     }
