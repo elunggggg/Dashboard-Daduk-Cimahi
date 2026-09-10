@@ -5,6 +5,7 @@ namespace App\Exports;
 use App\Models\DataAgregat;
 use App\Models\DimKategori;
 use App\Models\DimWilayah;
+use App\Models\KonfigurasiExport;
 use App\Models\KonfigurasiImport;
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\FromArray;
@@ -19,17 +20,21 @@ use PhpOffice\PhpSpreadsheet\Style\Fill;
 
 /**
  * Satu sheet ekspor = satu jenis_indikator, ditata meniru berkas DKB
- * Disdukcapil: baris = wilayah (15 kelurahan + subtotal kecamatan + total
- * Kota, atau 3 kecamatan, atau 1 baris Kota — mengikuti granularitas data),
- * kolom = kategori indikator. Indikator yang punya rincian jenis kelamin
- * ({jenis}_l/_p) memakai sub-kolom Laki-laki | Perempuan | Jumlah per kategori.
+ * Disdukcapil: baris = wilayah (kelurahan + subtotal kecamatan + total Kota,
+ * atau 3 kecamatan, atau 1 baris Kota — mengikuti granularitas data), kolom =
+ * kategori indikator; indikator ber-rincian jenis kelamin memakai sub-kolom
+ * Laki-laki | Perempuan | Jumlah per kategori.
  *
- * Bila lebih dari satu periode diekspor, tiap periode jadi BLOK tabel sendiri
- * yang ditumpuk vertikal (judul periode di atas tiap blok).
+ * ELEMEN (No, judul kolom Wilayah, sub-kolom L/P/Jumlah, kolom "Jumlah
+ * Seluruhnya", baris subtotal kecamatan, baris total Kota) diambil dari
+ * "Konfigurasi Unduh" (tabel konfigurasi_export) — bisa dinonaktifkan &
+ * di-relabel Petugas.
  *
- * Indikator berupa RASIO / RATA-RATA (kepadatan, LPP, umur median, rasio-…)
- * tidak dijumlahkan: barisnya hanya per wilayah, tanpa subtotal/total dan
- * tanpa kolom "Jumlah Seluruhnya" (menjumlahkan rasio tidak bermakna).
+ * Beberapa periode → tiap periode jadi BLOK tabel sendiri, ditumpuk vertikal.
+ *
+ * Indikator RASIO / RATA-RATA (kepadatan, LPP, umur median, rasio-…) tidak
+ * dijumlahkan: baris per wilayah saja, tanpa subtotal/total & tanpa "Jumlah
+ * Seluruhnya" (menjumlahkan rasio tidak bermakna).
  */
 class DkbSheetExport implements FromArray, WithTitle, WithEvents, ShouldAutoSize
 {
@@ -42,20 +47,36 @@ class DkbSheetExport implements FromArray, WithTitle, WithEvents, ShouldAutoSize
     /** @var array<int, array<int, mixed>> */
     private array $grid = [];
 
-    /** @var array<int, string> rentang sel yang di-merge, mis. "A1:F1" */
+    /** @var array<int, string> rentang sel yang di-merge */
     private array $merges = [];
 
-    /** @var array<int, int> nomor baris (1-based) subtotal/total → tebal + arsir */
+    /** @var array<int, int> nomor baris subtotal/total → tebal + arsir */
     private array $barisRekap = [];
 
-    /** @var array<int, int> nomor baris (1-based) judul + header kolom → putih di navy */
+    /** @var array<int, int> nomor baris judul + header kolom → putih di navy */
     private array $barisHeader = [];
 
     private int $kolomTerakhir = 2;
 
-    private bool $lp;
+    private bool $lp;            // benar-benar tampil L/P (punya rincian JK DAN elemen L/P aktif)
 
-    private bool $agregatif;
+    // Elemen dari Konfigurasi Unduh
+    private bool $adaNo;
+    private bool $adaLaki;
+    private bool $adaPerempuan;
+    private bool $adaJumlahSeluruhnya;
+    private bool $adaSubtotal;
+    private bool $adaTotalKota;
+    private string $labelNo;
+    private string $labelWilayah;
+    private string $labelLaki;
+    private string $labelPerempuan;
+    private string $labelJumlah;
+    private string $labelJumlahSeluruhnya;
+    private string $labelTotalKota;
+
+    private int $kolIdentitas;  // 2 (No + Wilayah) atau 1 (Wilayah saja)
+    private int $subKolom;      // sub-kolom per kategori
 
     public function __construct(
         private readonly string $jenis,
@@ -64,8 +85,31 @@ class DkbSheetExport implements FromArray, WithTitle, WithEvents, ShouldAutoSize
         private readonly ?string $kecamatan,
         private readonly string $namaSheet,
     ) {
-        $this->lp        = DataAgregatExport::punyaRincianJk($this->jenis);
-        $this->agregatif = ! in_array($this->jenis, self::NON_AGREGATIF, true);
+        $agregatif = ! in_array($this->jenis, self::NON_AGREGATIF, true);
+
+        $this->adaNo        = KonfigurasiExport::elemenAktif('no');
+        $this->adaLaki      = KonfigurasiExport::elemenAktif('laki');
+        $this->adaPerempuan = KonfigurasiExport::elemenAktif('perempuan');
+        $this->adaJumlahSeluruhnya = $agregatif && KonfigurasiExport::elemenAktif('jumlah_seluruhnya');
+        $this->adaSubtotal  = $agregatif && KonfigurasiExport::elemenAktif('subtotal_kecamatan');
+        $this->adaTotalKota = $agregatif && KonfigurasiExport::elemenAktif('total_kota');
+
+        $this->labelNo               = KonfigurasiExport::labelElemen('no');
+        $this->labelWilayah          = KonfigurasiExport::labelElemen('wilayah');
+        $this->labelLaki             = KonfigurasiExport::labelElemen('laki');
+        $this->labelPerempuan        = KonfigurasiExport::labelElemen('perempuan');
+        $this->labelJumlah           = KonfigurasiExport::labelElemen('jumlah');
+        $this->labelJumlahSeluruhnya = KonfigurasiExport::labelElemen('jumlah_seluruhnya');
+        $this->labelTotalKota        = KonfigurasiExport::labelElemen('total_kota');
+
+        $this->lp = DataAgregatExport::punyaRincianJk($this->jenis)
+            && ($this->adaLaki || $this->adaPerempuan);
+
+        $this->kolIdentitas = $this->adaNo ? 2 : 1;
+        $this->subKolom = $this->lp
+            ? (int) $this->adaLaki + (int) $this->adaPerempuan + 1
+            : 1;
+
         $this->bangun();
     }
 
@@ -84,38 +128,40 @@ class DkbSheetExport implements FromArray, WithTitle, WithEvents, ShouldAutoSize
     private function bangun(): void
     {
         $kategori = $this->kategoriTerurut();
-        $subKolom = $this->lp ? 3 : 1;
 
-        // No + Wilayah + (kategori × subKolom) [+ Jumlah Seluruhnya × subKolom]
-        $this->kolomTerakhir = 2 + count($kategori) * $subKolom + ($this->agregatif ? $subKolom : 0);
+        $this->kolomTerakhir = $this->kolIdentitas
+            + count($kategori) * $this->subKolom
+            + ($this->adaJumlahSeluruhnya ? $this->subKolom : 0);
 
         $periode = $this->periode->sortBy('tahun')->sortBy('semester')->values();
 
         foreach ($periode as $idx => $waktu) {
-            $this->blokPeriode($waktu, $kategori, $subKolom);
+            $this->blokPeriode($waktu, $kategori);
 
             if ($idx < $periode->count() - 1) {
-                $this->push([]); // baris kosong pemisah antar-blok
+                $this->push([]);
             }
         }
     }
 
-    /**
-     * Tambah satu baris ke grid, dipadatkan ke lebar tetap (kolomTerakhir)
-     * dengan string kosong — supaya indeks grid = nomor baris Excel PERSIS
-     * (baris `[]` diabaikan PhpSpreadsheet dan akan menggeser semua nomor).
-     */
+    /** Padatkan tiap baris ke lebar tetap → indeks grid = nomor baris Excel persis. */
     private function push(array $row): int
     {
         $row = array_slice($row, 0, $this->kolomTerakhir);
         $row = array_pad($row, $this->kolomTerakhir, '');
         $this->grid[] = array_values($row);
 
-        return count($this->grid); // 1-based
+        return count($this->grid);
+    }
+
+    /** Judul-judul identitas ("No", "Wilayah") sesuai elemen aktif. */
+    private function selIdentitas(string $isiWilayah = ''): array
+    {
+        return $this->adaNo ? ['', $isiWilayah] : [$isiWilayah];
     }
 
     /** @param  array<int, string>  $kategori */
-    private function blokPeriode($waktu, array $kategori, int $subKolom): void
+    private function blokPeriode($waktu, array $kategori): void
     {
         [$nilai, $granularitas] = $this->kumpulkanNilai($waktu->id);
 
@@ -126,36 +172,48 @@ class DkbSheetExport implements FromArray, WithTitle, WithEvents, ShouldAutoSize
 
         // ── Header kolom (baris 1) ──
         $judulKolom = $kategori;
-        if ($this->agregatif) {
-            $judulKolom[] = 'Jumlah Seluruhnya';
+        if ($this->adaJumlahSeluruhnya) {
+            $judulKolom[] = $this->labelJumlahSeluruhnya;
         }
 
-        $rH1 = count($this->grid) + 1; // baris tempat h1 akan ditulis
-        $h1  = ['No', 'Wilayah'];
-        $c   = 3;
+        $rH1 = count($this->grid) + 1;
+        $h1  = $this->adaNo ? [$this->labelNo, $this->labelWilayah] : [$this->labelWilayah];
+        $c   = $this->kolIdentitas + 1;
         foreach ($judulKolom as $label) {
             $h1[] = $label;
-            for ($i = 1; $i < $subKolom; $i++) {
+            for ($i = 1; $i < $this->subKolom; $i++) {
                 $h1[] = '';
             }
-            if ($subKolom > 1) {
-                $this->merges[] = $this->huruf($c).$rH1.':'.$this->huruf($c + $subKolom - 1).$rH1;
+            if ($this->subKolom > 1) {
+                $this->merges[] = $this->huruf($c).$rH1.':'.$this->huruf($c + $this->subKolom - 1).$rH1;
             }
-            $c += $subKolom;
+            $c += $this->subKolom;
         }
         $this->push($h1);
         $this->barisHeader[] = $rH1;
 
-        // ── Header kolom (baris 2: L/P/Jumlah) — hanya bila LP ──
+        // ── Header kolom (baris 2: sub-kolom L/P/Jumlah) — hanya bila LP ──
         if ($this->lp) {
-            $h2 = ['', ''];
+            $sub = [];
+            if ($this->adaLaki) {
+                $sub[] = $this->labelLaki;
+            }
+            if ($this->adaPerempuan) {
+                $sub[] = $this->labelPerempuan;
+            }
+            $sub[] = $this->labelJumlah;
+
+            $h2 = $this->adaNo ? ['', ''] : [''];
             foreach ($judulKolom as $ignored) {
-                array_push($h2, 'Laki-laki', 'Perempuan', 'Jumlah');
+                array_push($h2, ...$sub);
             }
             $rH2 = $this->push($h2);
             $this->barisHeader[] = $rH2;
+
             $this->merges[] = 'A'.$rH1.':A'.$rH2;
-            $this->merges[] = 'B'.$rH1.':B'.$rH2;
+            if ($this->adaNo) {
+                $this->merges[] = 'B'.$rH1.':B'.$rH2;
+            }
         }
 
         // ── Baris data ──
@@ -180,7 +238,7 @@ class DkbSheetExport implements FromArray, WithTitle, WithEvents, ShouldAutoSize
      */
     private function barisNilai(string $no, string $nama, array $wilayahIds, array $nilai, array $kategori): array
     {
-        $row = [$no, $nama];
+        $row = $this->adaNo ? [$no, $nama] : [$nama];
         $tot = ['laki' => 0, 'perempuan' => 0, 'total' => 0];
 
         foreach ($kategori as $label) {
@@ -191,10 +249,8 @@ class DkbSheetExport implements FromArray, WithTitle, WithEvents, ShouldAutoSize
                 $sel['total']     += $nilai[$wid][$label]['total'] ?? 0;
             }
 
-            if ($this->lp) {
-                array_push($row, $sel['laki'], $sel['perempuan'], $sel['total']);
-            } else {
-                $row[] = $sel['total'];
+            foreach ($this->urutSel($sel) as $v) {
+                $row[] = $v;
             }
 
             $tot['laki']      += $sel['laki'];
@@ -202,25 +258,42 @@ class DkbSheetExport implements FromArray, WithTitle, WithEvents, ShouldAutoSize
             $tot['total']     += $sel['total'];
         }
 
-        if ($this->agregatif) {
-            if ($this->lp) {
-                array_push($row, $tot['laki'], $tot['perempuan'], $tot['total']);
-            } else {
-                $row[] = $tot['total'];
+        if ($this->adaJumlahSeluruhnya) {
+            foreach ($this->urutSel($tot) as $v) {
+                $row[] = $v;
             }
         }
 
         return $row;
     }
 
+    /** Nilai satu kategori sesuai sub-kolom aktif: [L?][P?][Total]. */
+    private function urutSel(array $sel): array
+    {
+        if (! $this->lp) {
+            return [$sel['total']];
+        }
+
+        $out = [];
+        if ($this->adaLaki) {
+            $out[] = $sel['laki'];
+        }
+        if ($this->adaPerempuan) {
+            $out[] = $sel['perempuan'];
+        }
+        $out[] = $sel['total'];
+
+        return $out;
+    }
+
     // ── Data & struktur wilayah ─────────────────────────────────────────────
 
-    /**
-     * @return array{0: array<int, array<string, array<string, int>>>, 1: string}
-     */
+    /** @return array{0: array<int, array<string, array<string, int>>>, 1: string} */
     private function kumpulkanNilai(int $waktuId): array
     {
-        $jenisSet = $this->lp ? [$this->jenis, $this->jenis.'_l', $this->jenis.'_p'] : [$this->jenis];
+        $jenisSet = DataAgregatExport::punyaRincianJk($this->jenis)
+            ? [$this->jenis, $this->jenis.'_l', $this->jenis.'_p']
+            : [$this->jenis];
 
         $rows = DataAgregat::query()
             ->whereHas('kategori', fn ($q) => $q->whereIn('jenis_indikator', $jenisSet))
@@ -266,14 +339,14 @@ class DkbSheetExport implements FromArray, WithTitle, WithEvents, ShouldAutoSize
                     $out[] = ['tipe' => 'kelurahan', 'nama' => $kel->nama_kelurahan, 'ids' => [$kel->id]];
                     $ids[] = $kel->id;
                 }
-                if ($this->agregatif) {
+                if ($this->adaSubtotal) {
                     $out[] = ['tipe' => 'subtotal', 'nama' => $namaKec, 'ids' => $ids];
                 }
                 $semua = array_merge($semua, $ids);
             }
 
-            if ($this->agregatif && ! $this->kecamatan) {
-                $out[] = ['tipe' => 'total', 'nama' => 'KOTA CIMAHI', 'ids' => $semua];
+            if ($this->adaTotalKota && ! $this->kecamatan) {
+                $out[] = ['tipe' => 'total', 'nama' => $this->labelTotalKota, 'ids' => $semua];
             }
 
             return $out;
@@ -290,8 +363,8 @@ class DkbSheetExport implements FromArray, WithTitle, WithEvents, ShouldAutoSize
                 $out[] = ['tipe' => 'kelurahan', 'nama' => $k->nama_kecamatan, 'ids' => [$k->id]];
                 $ids[] = $k->id;
             }
-            if ($this->agregatif && ! $this->kecamatan && $kec->count() > 1) {
-                $out[] = ['tipe' => 'total', 'nama' => 'KOTA CIMAHI', 'ids' => $ids];
+            if ($this->adaTotalKota && ! $this->kecamatan && $kec->count() > 1) {
+                $out[] = ['tipe' => 'total', 'nama' => $this->labelTotalKota, 'ids' => $ids];
             }
 
             return $out;
@@ -299,16 +372,16 @@ class DkbSheetExport implements FromArray, WithTitle, WithEvents, ShouldAutoSize
 
         $kota = DimWilayah::query()->where('is_kota', true)->first(['id']);
         if ($kota) {
-            $out[] = ['tipe' => 'total', 'nama' => 'KOTA CIMAHI', 'ids' => [$kota->id]];
+            $out[] = ['tipe' => 'total', 'nama' => $this->labelTotalKota, 'ids' => [$kota->id]];
         }
 
         return $out;
     }
 
     /**
-     * Urutan kategori (kolom). Bila SEMUA label memuat angka (umur tunggal,
-     * kelompok umur) → urut menurut angkanya. Selain itu → menurut posisi
-     * kolom di berkas DKB (urutan baris konfigurasi_import), lalu abjad.
+     * Urutan kategori (kolom). Bila SEMUA label diawali angka → urut numerik;
+     * selain itu → urutan posisi di konfigurasi_import (= urutan kolom DKB),
+     * lalu abjad.
      *
      * @return array<int, string>
      */
@@ -322,12 +395,9 @@ class DkbSheetExport implements FromArray, WithTitle, WithEvents, ShouldAutoSize
             return [];
         }
 
-        // "Deret angka": tiap label DIAWALI angka (opsional "Umur "), mis.
-        // "0-4 Tahun", "Umur 17 Tahun", "75+ Tahun". Bukan sekadar memuat digit
-        // (supaya "Kepadatan (Jiwa/km2)" tidak salah dianggap deret angka).
         if ($label->every(fn ($l) => preg_match('/^\s*(umur\s+)?\d/i', (string) $l))) {
             return $label
-                ->sortBy(fn ($l) => (int) (preg_match('/\d+/', (string) $l, $m) ? $m[0] : 0))
+                ->sortBy(fn ($l) => (int) (preg_match('/-?\d+/', (string) $l, $m) ? $m[0] : 0))
                 ->values()->all();
         }
 
@@ -379,10 +449,13 @@ class DkbSheetExport implements FromArray, WithTitle, WithEvents, ShouldAutoSize
                     ->setBorderStyle(Border::BORDER_THIN)
                     ->getColor()->setRGB('D1D5DB');
 
-                $sheet->getStyle('C1:'.$lastCol.$lastRow)
+                // Kolom data (setelah kolom identitas) → format ribuan.
+                $awalData = $this->huruf($this->kolIdentitas + 1);
+                $sheet->getStyle($awalData.'1:'.$lastCol.$lastRow)
                     ->getNumberFormat()->setFormatCode('#,##0');
 
-                $sheet->getStyle('B1:B'.$lastRow)->getAlignment()->setWrapText(true);
+                $kolWilayah = $this->huruf($this->kolIdentitas);
+                $sheet->getStyle($kolWilayah.'1:'.$kolWilayah.$lastRow)->getAlignment()->setWrapText(true);
             },
         ];
     }

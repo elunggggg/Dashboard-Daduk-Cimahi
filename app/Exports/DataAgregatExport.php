@@ -61,10 +61,11 @@ class DataAgregatExport implements FromCollection, WithHeadings, WithMapping, Wi
     }
 
     /**
-     * Kolom yang benar-benar ikut diekspor: konfigurasi aktif (terurut), minus
-     * kolom Laki-laki/Perempuan bila indikator terpilih tidak punya rincian JK.
+     * Kolom berkas PDF (tata letak rata). Enam kolom identitas selalu ada
+     * (baku); kolom Laki-laki / Perempuan / Jumlah label & tampil-tidaknya
+     * mengikuti "Konfigurasi Unduh" (elemen yang sama dipakai berkas Excel).
      *
-     * @return Collection<int, KonfigurasiExport>
+     * @return Collection<int, object{kunci: string, label: string, angka: bool}>
      */
     public function kolomAktif(): Collection
     {
@@ -74,17 +75,22 @@ class DataAgregatExport implements FromCollection, WithHeadings, WithMapping, Wi
 
         $lp = static::punyaRincianJk($this->jenisIndikator);
 
-        $kolom = KonfigurasiExport::terurut()
-            ->reject(fn (KonfigurasiExport $k) => in_array($k->kunci, KonfigurasiExport::KUNCI_RINCIAN_JK, true) && ! $lp)
-            ->values();
+        $kolom = collect([
+            (object) ['kunci' => 'kode_wilayah', 'label' => 'Kode Wilayah', 'angka' => false],
+            (object) ['kunci' => 'kecamatan',    'label' => 'Kecamatan',    'angka' => false],
+            (object) ['kunci' => 'kelurahan',    'label' => 'Kelurahan',    'angka' => false],
+            (object) ['kunci' => 'periode',      'label' => 'Periode',      'angka' => false],
+            (object) ['kunci' => 'indikator',    'label' => 'Indikator',    'angka' => false],
+            (object) ['kunci' => 'kategori',     'label' => 'Kategori',     'angka' => false],
+        ]);
 
-        // Pengaman: kalau Petugas menonaktifkan semua kolom, jangan hasilkan
-        // berkas kosong — pakai seluruh kolom yang dikenal apa adanya.
-        if ($kolom->isEmpty()) {
-            $kolom = KonfigurasiExport::query()->orderBy('urutan')->orderBy('id')->get()
-                ->reject(fn (KonfigurasiExport $k) => in_array($k->kunci, KonfigurasiExport::KUNCI_RINCIAN_JK, true) && ! $lp)
-                ->values();
+        if ($lp && KonfigurasiExport::elemenAktif('laki')) {
+            $kolom->push((object) ['kunci' => 'laki', 'label' => KonfigurasiExport::labelElemen('laki'), 'angka' => true]);
         }
+        if ($lp && KonfigurasiExport::elemenAktif('perempuan')) {
+            $kolom->push((object) ['kunci' => 'perempuan', 'label' => KonfigurasiExport::labelElemen('perempuan'), 'angka' => true]);
+        }
+        $kolom->push((object) ['kunci' => 'jumlah', 'label' => KonfigurasiExport::labelElemen('jumlah'), 'angka' => true]);
 
         return $this->kolomAktifCache = $kolom;
     }
@@ -248,14 +254,15 @@ class DataAgregatExport implements FromCollection, WithHeadings, WithMapping, Wi
         ];
     }
 
-    /** Kolom ber-format "angka" (di konfigurasi_export) → format ribuan Excel. */
+    /** Kolom angka → format ribuan. (Kelas ini kini hanya dipakai untuk PDF;
+     *  concern Excel dibiarkan tetap benar seandainya dipakai lagi.) */
     public function columnFormats(): array
     {
         $formats = [];
         $huruf = 'A';
 
         foreach ($this->kolomAktif() as $k) {
-            if ($k->format === KonfigurasiExport::FORMAT_ANGKA) {
+            if ($k->angka) {
                 $formats[$huruf] = '#,##0';
             }
 

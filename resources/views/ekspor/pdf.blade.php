@@ -55,7 +55,7 @@
         <thead>
             <tr>
                 @foreach ($kolom as $k)
-                    <th @class(['num' => $k->format === \App\Models\KonfigurasiExport::FORMAT_ANGKA])>{{ $k->label }}</th>
+                    <th @class(['num' => $k->angka])>{{ $k->label }}</th>
                 @endforeach
             </tr>
         </thead>
@@ -64,7 +64,7 @@
                 <tr>
                     @foreach ($kolom as $k)
                         @php $nilai = $b[$k->kunci] ?? null; @endphp
-                        @if ($k->format === \App\Models\KonfigurasiExport::FORMAT_ANGKA)
+                        @if ($k->angka)
                             <td class="num">{{ $nilai === null ? '—' : number_format((int) $nilai, 0, ',', '.') }}</td>
                         @else
                             <td>{{ $nilai === null || $nilai === '' ? '—' : $nilai }}</td>

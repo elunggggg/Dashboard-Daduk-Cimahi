@@ -6,13 +6,13 @@ use App\Models\KonfigurasiExport;
 use Illuminate\Database\Seeder;
 
 /**
- * Isi bawaan Konfigurasi Export = kolom berkas ekspor persis seperti sebelum
- * fitur ini ada (Kode Wilayah · Kecamatan · Kelurahan · Periode · Indikator ·
- * Kategori · Laki-laki · Perempuan · Jumlah).
+ * Isi bawaan Konfigurasi Unduh = elemen berkas Excel gaya DKB (No, Wilayah,
+ * Laki-laki, Perempuan, Jumlah, Jumlah Seluruhnya, Subtotal per Kecamatan,
+ * KOTA CIMAHI) — semua aktif.
  *
- * Idempoten: `updateOrCreate` pada `kunci` menjaga urutan/format bawaan tetap
- * konsisten bila di-seed ulang, TANPA menimpa `label`/`aktif` yang mungkin
- * sudah diubah Petugas — kecuali baris belum ada (baru dibuat penuh dari SUMBER).
+ * Idempoten: `firstOrNew` per `kunci`. Label & status aktif hanya diisi saat
+ * baris memang baru (jangan menimpa penyesuaian Petugas); `urutan` selalu
+ * diselaraskan ke bawaan.
  */
 class KonfigurasiExportSeeder extends Seeder
 {
@@ -24,15 +24,11 @@ class KonfigurasiExportSeeder extends Seeder
             $urutan += 10;
 
             $baris = KonfigurasiExport::firstOrNew(['kunci' => $kunci]);
-
-            // Kolom teknis selalu diselaraskan ke bawaan; label & aktif hanya
-            // diisi saat baris memang baru (jangan timpa penyesuaian Petugas).
-            $baris->format = $meta['format'];
+            $baris->urutan = $urutan;
 
             if (! $baris->exists) {
-                $baris->label  = $meta['label'];
-                $baris->urutan = $urutan;
-                $baris->aktif  = true;
+                $baris->label = $meta['label'];
+                $baris->aktif = true;
             }
 
             $baris->save();
