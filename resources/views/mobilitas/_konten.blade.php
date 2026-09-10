@@ -49,7 +49,7 @@
         <h2 class="section-title">Pendatang per Kelurahan</h2>
         <p class="text-xs text-gray-400 -mt-2 mb-3">{{ $periodeLabelMobilitas }} — diurutkan terbanyak</p>
         <div class="h-[400px]"><canvas id="chart-datang"></canvas></div>
-        <x-rincian-indikator :data="$datangData" :total="$totalDatang" chart-id="chart-datang" />
+        <x-rincian-indikator :data="$datangData" :laki="$datangLakiData" :perempuan="$datangPerempuanData" :total="$totalDatang" chart-id="chart-datang" />
     </div>
 </x-seksi>
 
@@ -58,7 +58,7 @@
         <h2 class="section-title">Pindah Keluar per Kelurahan</h2>
         <p class="text-xs text-gray-400 -mt-2 mb-3">{{ $periodeLabelMobilitas }} — diurutkan terbanyak</p>
         <div class="h-[400px]"><canvas id="chart-pindah"></canvas></div>
-        <x-rincian-indikator :data="$pindahData" :total="$totalPindah" chart-id="chart-pindah" />
+        <x-rincian-indikator :data="$pindahData" :laki="$pindahLakiData" :perempuan="$pindahPerempuanData" :total="$totalPindah" chart-id="chart-pindah" />
     </div>
 </x-seksi>
 

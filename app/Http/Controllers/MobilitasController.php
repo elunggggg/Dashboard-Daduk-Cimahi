@@ -29,6 +29,12 @@ class MobilitasController extends Controller
         $datangData = $this->perKelurahan('mobilitas_datang', $waktuId);
         $pindahData = $this->perKelurahan('mobilitas_pindah', $waktuId);
 
+        // Rincian jenis kelamin per kelurahan (kolom L/P tabel).
+        $datangLakiData      = $this->perKelurahan('mobilitas_datang_l', $waktuId);
+        $datangPerempuanData = $this->perKelurahan('mobilitas_datang_p', $waktuId);
+        $pindahLakiData      = $this->perKelurahan('mobilitas_pindah_l', $waktuId);
+        $pindahPerempuanData = $this->perKelurahan('mobilitas_pindah_p', $waktuId);
+
         $totalDatang = (int) $datangData->sum();
         $totalPindah = (int) $pindahData->sum();
         $saldo       = $totalDatang - $totalPindah;
@@ -41,6 +47,8 @@ class MobilitasController extends Controller
 
         $vars = [
             'datangData' => $datangData, 'pindahData' => $pindahData,
+            'datangLakiData' => $datangLakiData, 'datangPerempuanData' => $datangPerempuanData,
+            'pindahLakiData' => $pindahLakiData, 'pindahPerempuanData' => $pindahPerempuanData,
             'totalDatang' => $totalDatang, 'totalPindah' => $totalPindah,
             'saldo' => $saldo, 'rasioPindahDatang' => $rasioPindahDatang,
             'trendDatang' => $trendDatang, 'trendPindah' => $trendPindah,

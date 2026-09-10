@@ -922,12 +922,56 @@ class KonfigurasiImportSeeder extends Seeder
             $this->simpan('KelompokUmur', 'kelompok_umur_p', $label, $teksHeader, 1, KonfigurasiImport::ORIENTASI_KOLOM);
         }
 
+        /*
+         * Rincian LAKI-LAKI / PEREMPUAN untuk indikator yang selama ini hanya
+         * menyimpan kolom TOTAL. Semua sheet di daftar ini berheader grup
+         * "L | P | Total" (atau "L | P | L+P") dengan kolom Total di offset 2 —
+         * jadi L ada di offset 0, P di offset 1. Sudah diverifikasi ke berkas
+         * DKB S1 & S2 2025 (MELONG dst: offset0 + offset1 == offset2). Murni
+         * TAMBAHAN <jenis>_l / <jenis>_p — tidak menyentuh satu pun mapping
+         * Total yang sudah ada, dan orientasi/mulai/alias diwarisi apa adanya
+         * dari definisi $profil sheet itu supaya tetap satu grup yang konsisten.
+         */
+        $rincianJenisKelamin = [
+            'StatKawin_JK', 'Agama_JK', 'GolDar_JK', 'Pendidikan',
+            'KelompokPekerjaan', 'Disabilitas', 'SHBKEL', 'KTP',
+        ];
+        foreach ($rincianJenisKelamin as $sheet) {
+            $def = $this->profil[$sheet];
+            $orientasi = $def['orientasi'] ?? KonfigurasiImport::ORIENTASI_BARIS;
+            $mulai     = $def['mulai'] ?? 0;
+            $alias     = $def['alias'] ?? null;
+
+            foreach ($def['kolom'] as $label => $teksHeader) {
+                $this->simpan($sheet, $def['jenis'].'_l', (string) $label, $teksHeader, $def['offset'] - 2, $orientasi, $mulai, $alias);
+                $this->simpan($sheet, $def['jenis'].'_p', (string) $label, $teksHeader, $def['offset'] - 1, $orientasi, $mulai, $alias);
+            }
+        }
+
+        // Pindah/Datang per jenis kelamin — header grup "Pindah"/"Datang", lalu
+        // Laki-laki (offset 0) | Perempuan (offset 1) | Jumlah (offset 2).
+        foreach ($this->mobilitas as $m) {
+            $this->simpan('Pindah_&_Datang', $m['jenis'].'_l', $m['label'], $m['header'], 0);
+            $this->simpan('Pindah_&_Datang', $m['jenis'].'_p', $m['label'], $m['header'], 1);
+        }
+
         // Umur tunggal PENUH (1-99 tahun) per kelurahan — usia 0 sudah
         // ditangani terpisah di atas sebagai 'kelahiran_proxy' (makna beda:
-        // proksi kelahiran, bukan sekadar cacah umur biasa).
+        // proksi kelahiran, bukan sekadar cacah umur biasa). Sheet UmurTunggal
+        // berheader "L | P | TOTAL" per kelurahan (TOTAL di offset 2), jadi
+        // rincian L/P ada di offset 0/1 — ditambahkan sekalian di sini supaya
+        // piramida umur tunggal punya pecahan jenis kelamin.
         for ($umur = 1; $umur <= 99; $umur++) {
             $this->simpan('UmurTunggal', 'umur_tunggal', "Umur {$umur} Tahun", (string) $umur, 2, KonfigurasiImport::ORIENTASI_KOLOM_URUT);
+            $this->simpan('UmurTunggal', 'umur_tunggal_l', "Umur {$umur} Tahun", (string) $umur, 0, KonfigurasiImport::ORIENTASI_KOLOM_URUT);
+            $this->simpan('UmurTunggal', 'umur_tunggal_p', "Umur {$umur} Tahun", (string) $umur, 1, KonfigurasiImport::ORIENTASI_KOLOM_URUT);
         }
+
+        // Usia 0 tahun L/P — melengkapi umur_tunggal_l/_p supaya piramida umur
+        // tunggal utuh 0-99 (baris "0" di sheet yang sama; nilainya sama dengan
+        // rincian L/P dari 'kelahiran_proxy', hanya diberi label seragam).
+        $this->simpan('UmurTunggal', 'umur_tunggal_l', 'Umur 0 Tahun', '0', 0, KonfigurasiImport::ORIENTASI_KOLOM_URUT);
+        $this->simpan('UmurTunggal', 'umur_tunggal_p', 'Umur 0 Tahun', '0', 1, KonfigurasiImport::ORIENTASI_KOLOM_URUT);
 
         // 4 sheet penerbitan dokumen — rekap kota per bulan.
         foreach ($this->terbitDokumen as $d) {

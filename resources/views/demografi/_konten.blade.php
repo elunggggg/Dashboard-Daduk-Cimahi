@@ -132,7 +132,7 @@
         <h2 class="section-title">Status Perkawinan</h2>
         <p class="text-xs text-gray-400 -mt-2 mb-3">Penduduk usia 15 tahun ke atas</p>
         <div class="h-[300px]"><canvas id="chart-marital"></canvas></div>
-        <x-rincian-indikator :data="$maritalData" :total="$maritalData->sum()" chart-id="chart-marital" />
+        <x-rincian-indikator :data="$maritalData" :laki="$maritalLakiData" :perempuan="$maritalPerempuanData" :total="$maritalData->sum()" chart-id="chart-marital" />
     </div>
 </x-seksi>
 
@@ -157,7 +157,7 @@
             </span>
         </div>
         <div class="h-[250px]"><canvas id="chart-disab"></canvas></div>
-        <x-rincian-indikator :data="$disabilData" :total="$totalDisabilitas" chart-id="chart-disab" />
+        <x-rincian-indikator :data="$disabilData" :laki="$disabilLakiData" :perempuan="$disabilPerempuanData" :total="$totalDisabilitas" chart-id="chart-disab" />
     </div>
 </x-seksi>
 
@@ -187,7 +187,7 @@
                 <p class="text-sm font-bold text-gray-900">{{ number_format($rasioKetergantungan, 1, ',', '.') }}%</p>
             </div>
         </div>
-        <x-rincian-indikator :data="$ageData" :total="$totalPenduduk" />
+        <x-rincian-indikator :data="$ageData" :laki="$ageLakiData" :perempuan="$agePerempuanData" :total="$totalPenduduk" />
     </div>
 </x-seksi>
 
@@ -195,10 +195,10 @@
     <div class="card">
         <div class="p-4 border-b border-gray-100">
             <h2 class="text-sm font-bold text-gray-900">Umur Tunggal (0-99 Tahun)</h2>
-            <p class="text-xs text-gray-400">Cari jumlah penduduk pada umur tertentu (mis. tepat 17 tahun), atau isi <strong>Rentang angka</strong> untuk menjumlahkan satu kelompok umur, mis. 17&ndash;40 tahun</p>
+            <p class="text-xs text-gray-400">Jumlah penduduk per umur tunggal (laki-laki &amp; perempuan). Cari jumlah pada umur tertentu (mis. tepat 17 tahun), atau isi <strong>Rentang angka</strong> untuk menjumlahkan satu kelompok umur, mis. 17&ndash;40 tahun</p>
         </div>
         <div class="p-4">
-            <x-rincian-indikator :data="$umurTunggalData" :total="$totalPenduduk" :range="true" />
+            <x-rincian-indikator :data="$umurTunggalData" :laki="$umurTunggalLakiData" :perempuan="$umurTunggalPerempuanData" :total="$totalPenduduk" :range="true" :scroll="false" />
         </div>
     </div>
 </x-seksi>

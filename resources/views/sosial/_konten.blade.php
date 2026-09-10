@@ -79,7 +79,7 @@
         <h2 class="section-title">Pendidikan</h2>
         <p class="text-xs text-gray-400 -mt-2 mb-3">Jenjang tertinggi yang ditamatkan — diurutkan terbanyak</p>
         <div class="h-[350px]"><canvas id="chart-edu"></canvas></div>
-        <x-rincian-indikator :data="$pendidikanData" :total="$pendidikanData->sum()" chart-id="chart-edu" />
+        <x-rincian-indikator :data="$pendidikanData" :laki="$pendidikanLakiData" :perempuan="$pendidikanPerempuanData" :total="$pendidikanData->sum()" chart-id="chart-edu" />
     </div>
 </x-seksi>
 
@@ -88,7 +88,7 @@
         <h2 class="section-title">Pekerjaan</h2>
         <p class="text-xs text-gray-400 -mt-2 mb-3">Jenis pekerjaan/kegiatan utama — diurutkan terbanyak</p>
         <div class="h-[350px]"><canvas id="chart-job"></canvas></div>
-        <x-rincian-indikator :data="$pekerjaanData" :total="$pekerjaanData->sum()" chart-id="chart-job" />
+        <x-rincian-indikator :data="$pekerjaanData" :laki="$pekerjaanLakiData" :perempuan="$pekerjaanPerempuanData" :total="$pekerjaanData->sum()" chart-id="chart-job" />
     </div>
 </x-seksi>
 
@@ -96,7 +96,7 @@
     <div class="section-card h-full">
         <h2 class="section-title">Kepemilikan KTP</h2>
         <div class="h-[300px]"><canvas id="chart-ktp-status"></canvas></div>
-        <x-rincian-indikator :data="$ktpStatusData" :total="$ktpData->get('Wajib KTP', 0)" chart-id="chart-ktp-status" />
+        <x-rincian-indikator :data="$ktpStatusData" :laki="$ktpStatusLakiData" :perempuan="$ktpStatusPerempuanData" :total="$ktpData->get('Wajib KTP', 0)" chart-id="chart-ktp-status" />
     </div>
 </x-seksi>
 
@@ -112,7 +112,7 @@
     <div class="section-card h-full">
         <h2 class="section-title">Golongan Darah</h2>
         <div class="h-[300px]"><canvas id="chart-goldar"></canvas></div>
-        <x-rincian-indikator :data="$golonganDarahData" :total="$golonganDarahData->sum()" chart-id="chart-goldar" />
+        <x-rincian-indikator :data="$golonganDarahData" :laki="$golonganDarahLakiData" :perempuan="$golonganDarahPerempuanData" :total="$golonganDarahData->sum()" chart-id="chart-goldar" />
     </div>
 </x-seksi>
 
@@ -146,7 +146,7 @@
         <h2 class="section-title">Agama</h2>
         <p class="text-xs text-gray-400 -mt-2 mb-3">Agama yang dianut penduduk — diurutkan terbanyak</p>
         <div class="h-[300px]"><canvas id="chart-agama"></canvas></div>
-        <x-rincian-indikator :data="$agamaData" :total="$agamaData->sum()" chart-id="chart-agama" />
+        <x-rincian-indikator :data="$agamaData" :laki="$agamaLakiData" :perempuan="$agamaPerempuanData" :total="$agamaData->sum()" chart-id="chart-agama" />
     </div>
 </x-seksi>
 
@@ -349,7 +349,7 @@
         <h2 class="section-title">Status Hubungan dalam Keluarga</h2>
         <p class="text-xs text-gray-400 -mt-2 mb-3">Kedudukan penduduk terhadap kepala keluarga</p>
         <div class="h-[300px]"><canvas id="chart-shbkel"></canvas></div>
-        <x-rincian-indikator :data="$shbkelData" :total="$shbkelData->sum()" chart-id="chart-shbkel" />
+        <x-rincian-indikator :data="$shbkelData" :laki="$shbkelLakiData" :perempuan="$shbkelPerempuanData" :total="$shbkelData->sum()" chart-id="chart-shbkel" />
     </div>
 </x-seksi>
 

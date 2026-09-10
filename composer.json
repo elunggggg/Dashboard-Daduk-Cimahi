@@ -2,7 +2,11 @@
     "name": "disdukcapil-cimahi/daduk-dashboard",
     "type": "project",
     "description": "Dashboard Data Agregat Penduduk Kota Cimahi — Disdukcapil",
-    "keywords": ["laravel", "dashboard", "kependudukan"],
+    "keywords": [
+        "laravel",
+        "dashboard",
+        "kependudukan"
+    ],
     "license": "proprietary",
     "require": {
         "php": "^8.2",

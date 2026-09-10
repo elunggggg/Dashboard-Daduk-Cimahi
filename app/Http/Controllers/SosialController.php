@@ -38,6 +38,26 @@ class SosialController extends Controller
         // Penduduk usia sekolah per jenjang (sheet UsiaSekolah).
         $usiaSekolahData = $this->aggr('usia_sekolah', $waktuId, $wilayahId, $kecamatan);
         $agamaData      = $this->aggr('agama',          $waktuId, $wilayahId, $kecamatan)->sortDesc();
+
+        // Rincian jenis kelamin (sheet berheader L|P|Total, offset 0/1) —
+        // dipakai kolom L/P di <x-rincian-indikator>. Kunci mengikuti koleksi
+        // "Total" yang bersangkutan.
+        $pendidikanLakiData      = $this->aggr('pendidikan_l', $waktuId, $wilayahId, $kecamatan);
+        $pendidikanPerempuanData = $this->aggr('pendidikan_p', $waktuId, $wilayahId, $kecamatan);
+        $pekerjaanLakiData       = $this->aggr('pekerjaan_l', $waktuId, $wilayahId, $kecamatan);
+        $pekerjaanPerempuanData  = $this->aggr('pekerjaan_p', $waktuId, $wilayahId, $kecamatan);
+        $agamaLakiData           = $this->aggr('agama_l', $waktuId, $wilayahId, $kecamatan);
+        $agamaPerempuanData      = $this->aggr('agama_p', $waktuId, $wilayahId, $kecamatan);
+        $shbkelLakiRaw           = $this->aggr('status_hubungan_keluarga_l', $waktuId, $wilayahId, $kecamatan);
+        $shbkelPerempuanRaw      = $this->aggr('status_hubungan_keluarga_p', $waktuId, $wilayahId, $kecamatan);
+        $ktpLakiRaw              = $this->aggr('kepemilikan_ktp_l', $waktuId, $wilayahId, $kecamatan);
+        $ktpPerempuanRaw         = $this->aggr('kepemilikan_ktp_p', $waktuId, $wilayahId, $kecamatan);
+        $goldarLabels               = ['A', 'B', 'AB', 'O', 'Tidak Tahu'];
+        $goldarLakiRaw              = $this->aggr('golongan_darah_l', $waktuId, $wilayahId, $kecamatan);
+        $goldarPerempuanRaw         = $this->aggr('golongan_darah_p', $waktuId, $wilayahId, $kecamatan);
+        $golonganDarahLakiData      = collect($goldarLabels)->mapWithKeys(fn ($l) => [$l => $goldarLakiRaw->get($l, 0)]);
+        $golonganDarahPerempuanData = collect($goldarLabels)->mapWithKeys(fn ($l) => [$l => $goldarPerempuanRaw->get($l, 0)]);
+
         $ktpData        = $this->aggr('kepemilikan_ktp',$waktuId, $wilayahId, $kecamatan);
         $kkData         = $this->aggr('kepemilikan_kk', $waktuId, $wilayahId, $kecamatan);
         $kiaData        = $this->aggr('kepemilikan_kia',$waktuId, $wilayahId, $kecamatan);
@@ -49,8 +69,10 @@ class SosialController extends Controller
         // Subset status KTP/KK dalam urutan tetap (bukan sortDesc) — "Wajib
         // KTP"/"Jumlah Kepala Keluarga" adalah PENYEBUT (dipakai $pctKtp/$pctKK
         // di bawah), bukan status, jadi sengaja dikeluarkan dari bar ini.
-        $ktpStatusData = collect(['Sudah Rekam KTP', 'Belum Rekam KTP', 'Sudah Cetak KTP', 'Belum Cetak KTP'])
-            ->mapWithKeys(fn ($label) => [$label => $ktpData->get($label, 0)]);
+        $ktpStatusLabels = ['Sudah Rekam KTP', 'Belum Rekam KTP', 'Sudah Cetak KTP', 'Belum Cetak KTP'];
+        $ktpStatusData = collect($ktpStatusLabels)->mapWithKeys(fn ($label) => [$label => $ktpData->get($label, 0)]);
+        $ktpStatusLakiData = collect($ktpStatusLabels)->mapWithKeys(fn ($label) => [$label => $ktpLakiRaw->get($label, 0)]);
+        $ktpStatusPerempuanData = collect($ktpStatusLabels)->mapWithKeys(fn ($label) => [$label => $ktpPerempuanRaw->get($label, 0)]);
         $kkStatusData = collect(['KK Sudah TTE', 'KK Belum TTE'])
             ->mapWithKeys(fn ($label) => [$label => $kkData->get($label, 0)]);
 
@@ -86,10 +108,13 @@ class SosialController extends Controller
         // hierarki keluarga (bukan sortDesc), sama seperti daftar kolom di
         // KonfigurasiImportSeeder::$profil['SHBKEL'].
         $shbkelDataRaw = $this->aggr('status_hubungan_keluarga', $waktuId, $wilayahId, $kecamatan);
-        $shbkelData = collect([
+        $shbkelLabels = [
             'Kepala Keluarga', 'Suami', 'Isteri', 'Anak', 'Menantu', 'Cucu',
             'Orang Tua', 'Mertua', 'Famili Lain', 'Pembantu', 'Lainnya',
-        ])->mapWithKeys(fn ($label) => [$label => $shbkelDataRaw->get($label, 0)]);
+        ];
+        $shbkelData = collect($shbkelLabels)->mapWithKeys(fn ($label) => [$label => $shbkelDataRaw->get($label, 0)]);
+        $shbkelLakiData = collect($shbkelLabels)->mapWithKeys(fn ($label) => [$label => $shbkelLakiRaw->get($label, 0)]);
+        $shbkelPerempuanData = collect($shbkelLabels)->mapWithKeys(fn ($label) => [$label => $shbkelPerempuanRaw->get($label, 0)]);
 
         // Angkatan kerja & TPAK. TPAK di sini SENGAJA dihitung ulang dari dua
         // komponen mentahnya (bukan memakai label 'TPAK (%)' hasil impor apa
@@ -238,6 +263,13 @@ class SosialController extends Controller
             'pctAktaLahir' => $pctAktaLahir, 'pctAktaKawin' => $pctAktaKawin,
             'pctAktaLahir05' => $pctAktaLahir05, 'pctAktaLahir017' => $pctAktaLahir017,
             'terbitTahunan' => $terbitTahunan,
+            // Rincian jenis kelamin (kolom L/P di tabel indikator).
+            'pendidikanLakiData' => $pendidikanLakiData, 'pendidikanPerempuanData' => $pendidikanPerempuanData,
+            'pekerjaanLakiData' => $pekerjaanLakiData, 'pekerjaanPerempuanData' => $pekerjaanPerempuanData,
+            'agamaLakiData' => $agamaLakiData, 'agamaPerempuanData' => $agamaPerempuanData,
+            'golonganDarahLakiData' => $golonganDarahLakiData, 'golonganDarahPerempuanData' => $golonganDarahPerempuanData,
+            'ktpStatusLakiData' => $ktpStatusLakiData, 'ktpStatusPerempuanData' => $ktpStatusPerempuanData,
+            'shbkelLakiData' => $shbkelLakiData, 'shbkelPerempuanData' => $shbkelPerempuanData,
         ];
 
         $seri = fn (Collection $d) => ['labels' => $d->keys()->values(), 'values' => $d->values()];

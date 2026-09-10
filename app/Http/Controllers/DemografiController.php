@@ -51,6 +51,14 @@ class DemografiController extends Controller
         $agePerempuanData = $this->aggr('kelompok_umur_p', $waktuId, $wilayahId, $kecamatan)
             ->sortBy(fn ($v, $k) => array_search($k, self::AGE_ORDER));
 
+        // Rincian jenis kelamin untuk indikator yang tabelnya menampilkan kolom
+        // L/P (lihat <x-rincian-indikator :laki :perempuan>). Kuncinya sama
+        // persis dengan koleksi "Total" yang bersangkutan.
+        $maritalLakiData      = $this->aggr('status_kawin_l', $waktuId, $wilayahId, $kecamatan);
+        $maritalPerempuanData = $this->aggr('status_kawin_p', $waktuId, $wilayahId, $kecamatan);
+        $disabilLakiData      = $this->aggr('disabilitas_l', $waktuId, $wilayahId, $kecamatan);
+        $disabilPerempuanData = $this->aggr('disabilitas_p', $waktuId, $wilayahId, $kecamatan);
+
         // Jumlah Anak (0-14 tahun) & Jumlah Penduduk Lansia (65+ tahun), per
         // jenis kelamin — dijumlahkan dari ageLakiData/agePerempuanData yang
         // sama dengan piramida di atas, supaya ikut filter kelurahan/periode
@@ -131,11 +139,17 @@ class DemografiController extends Controller
          * SECARA NUMERIK dari teks labelnya — urutan() di dim_kategori
          * semuanya masih 0 (default), jadi tidak bisa diandalkan buat ini.
          */
+        $urutUmur = fn ($c) => $c->sortBy(fn ($v, $k) => (int) filter_var($k, FILTER_SANITIZE_NUMBER_INT));
+
         $umurTunggalData = $this->aggr('umur_tunggal', $waktuId, $wilayahId, $kecamatan);
         $umurTunggalData->put('Umur 0 Tahun', $usia0);
-        $umurTunggalData = $umurTunggalData->sortBy(
-            fn ($v, $k) => (int) filter_var($k, FILTER_SANITIZE_NUMBER_INT)
-        );
+        $umurTunggalData = $urutUmur($umurTunggalData);
+
+        // Rincian L/P umur tunggal (sheet UmurTunggal offset 0/1) — sudah
+        // mencakup "Umur 0 Tahun". Dipakai kolom L/P tabel + piramida umur
+        // tunggal 0-99.
+        $umurTunggalLakiData      = $urutUmur($this->aggr('umur_tunggal_l', $waktuId, $wilayahId, $kecamatan));
+        $umurTunggalPerempuanData = $urutUmur($this->aggr('umur_tunggal_p', $waktuId, $wilayahId, $kecamatan));
 
         /*
          * Umur median & LPP: nilai per kelurahan yang diimpor APA ADANYA
@@ -278,7 +292,11 @@ class DemografiController extends Controller
             'maritalData' => $maritalData, 'disabilData' => $disabilData,
             'pctDisabilitas' => $pctDisabilitas, 'totalDisabilitas' => $totalDisabilitas, 'nonDisabilitas' => $nonDisabilitas,
             'ageData' => $ageData, 'produktif' => $produktif, 'usiaMuda' => $usiaMuda, 'usiaTua' => $usiaTua,
+            'ageLakiData' => $ageLakiData, 'agePerempuanData' => $agePerempuanData,
+            'maritalLakiData' => $maritalLakiData, 'maritalPerempuanData' => $maritalPerempuanData,
+            'disabilLakiData' => $disabilLakiData, 'disabilPerempuanData' => $disabilPerempuanData,
             'rasioKetergantungan' => $rasioKetergantungan, 'umurTunggalData' => $umurTunggalData,
+            'umurTunggalLakiData' => $umurTunggalLakiData, 'umurTunggalPerempuanData' => $umurTunggalPerempuanData,
             'usia0' => $usia0, 'cbr' => $cbr, 'gfr' => $gfr, 'tfr' => $tfr, 'asfrData' => $asfrData,
             'perkawinanKuData' => $perkawinanKuData, 'perkawinanKuJenis' => $perkawinanKuJenis,
             'disabilitasKuData' => $disabilitasKuData, 'golDarKuData' => $golDarKuData,

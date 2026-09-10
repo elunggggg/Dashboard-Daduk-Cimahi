@@ -6,10 +6,29 @@
 
      `range` (opsional): tampilkan juga filter RENTANG angka — cocok untuk
      indikator yang labelnya memuat angka (mis. "Umur 17 Tahun"). Baris yang
-     ditampilkan = yang angkanya di dalam rentang; totalnya dihitung otomatis. --}}
-@props(['data', 'total' => null, 'satuan' => 'jiwa', 'chartId' => null, 'range' => false])
+     ditampilkan = yang angkanya di dalam rentang; totalnya dihitung otomatis.
+
+     `laki` / `perempuan` (opsional, keduanya sekaligus): Collection/array
+     dengan KUNCI yang sama seperti `data` — menambah kolom "Laki-laki" &
+     "Perempuan" di tabel (kolom "Jumlah" tetap dari `data`). Dipakai untuk
+     indikator yang punya rincian jenis kelamin (umur tunggal, status kawin,
+     agama, pendidikan, dll).
+
+     `scroll` (opsional, default true): kalau false, tabel dibiarkan memanjang
+     ke bawah tanpa area gulir (tidak ada `max-height`). Dipakai untuk daftar
+     panjang yang lebih enak dibaca utuh, mis. Umur Tunggal 0-99. --}}
+@props(['data', 'total' => null, 'satuan' => 'Jiwa', 'chartId' => null, 'range' => false, 'laki' => null, 'perempuan' => null, 'scroll' => true])
 @php
-    $rows = collect($data)->map(fn ($v, $k) => ['label' => (string) $k, 'jumlah' => (int) $v])->values();
+    $lp = $laki !== null && $perempuan !== null;
+    $lakiArr = $lp ? collect($laki)->mapWithKeys(fn ($v, $k) => [(string) $k => (int) $v])->all() : [];
+    $perempuanArr = $lp ? collect($perempuan)->mapWithKeys(fn ($v, $k) => [(string) $k => (int) $v])->all() : [];
+
+    $rows = collect($data)->map(fn ($v, $k) => [
+        'label' => (string) $k,
+        'jumlah' => (int) $v,
+        'laki' => $lakiArr[(string) $k] ?? 0,
+        'perempuan' => $perempuanArr[(string) $k] ?? 0,
+    ])->values();
 
     // Untuk filter rentang: angka yang ada di tiap label ("Umur 17 Tahun" → 17),
     // dijadikan opsi dropdown "Dari" / "Sampai".
@@ -116,11 +135,15 @@
                 </div>
             @endif
 
-            <div class="overflow-auto rounded-lg border border-gray-100 max-h-56">
+            <div class="{{ $scroll ? 'overflow-auto max-h-56' : 'overflow-x-auto' }} rounded-lg border border-gray-100">
                 <table class="w-full text-xs">
                     <thead class="sticky top-0">
                         <tr class="bg-brand-900 text-white">
                             <th class="px-3 py-2 text-left font-semibold">Kategori</th>
+                            @if ($lp)
+                                <th class="px-3 py-2 text-right font-semibold">Laki-laki</th>
+                                <th class="px-3 py-2 text-right font-semibold">Perempuan</th>
+                            @endif
                             <th class="px-3 py-2 text-right font-semibold">Jumlah</th>
                             @if ($total)
                                 <th class="px-3 py-2 text-right font-semibold">Persentase</th>
@@ -133,6 +156,10 @@
                             <tr x-show="lolos(@js($r['label']))"
                                 class="{{ $i % 2 === 1 ? 'bg-gray-50' : 'bg-white' }}">
                                 <td class="px-3 py-1.5 text-gray-700 truncate">{{ $r['label'] }}</td>
+                                @if ($lp)
+                                    <td class="px-3 py-1.5 text-right text-gray-600">{{ number_format($r['laki'], 0, ',', '.') }}</td>
+                                    <td class="px-3 py-1.5 text-right text-gray-600">{{ number_format($r['perempuan'], 0, ',', '.') }}</td>
+                                @endif
                                 <td class="px-3 py-1.5 text-right font-semibold text-gray-900">
                                     {{ number_format($r['jumlah'], 0, ',', '.') }} {{ $satuan }}
                                 </td>
