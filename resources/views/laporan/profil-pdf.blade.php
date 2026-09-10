@@ -49,10 +49,10 @@
         yang tercatat dalam Sistem DADUK Cimahi untuk periode <strong>{{ $waktu->label }}</strong>.
         Laporan ini disusun mengikuti kerangka Buku Profil Kependudukan resmi Disdukcapil Kota
         Cimahi, dengan data yang bersumber dari berkas DKB (Data Kependudukan Berbasis) yang
-        telah diimpor ke dalam sistem.
+        telah diunggah ke dalam sistem.
     </p>
     <p class="ket">
-        Catatan kejujuran data: laporan ini HANYA memuat periode yang benar-benar sudah diimpor
+        Catatan kejujuran data: laporan ini HANYA memuat periode yang benar-benar sudah diunggah
         ke sistem ({{ \App\Models\DimWaktu::orderBy('tahun')->orderBy('semester')->pluck('label')->implode(', ') }}).
         Tabel yang memerlukan data tren multi-tahun (2022-2024) atau indikator yang belum
         dihitung sistem (SMAM) ditandai "Data tidak tersedia" — bukan dikosongkan diam-diam.
@@ -86,7 +86,7 @@
 
     <h3>3.3 Laju Pertumbuhan Penduduk (LPP)</h3>
     @if(collect($lpp)->isEmpty())
-        <p class="kosong">Data tidak tersedia — LPP memerlukan data penduduk periode sebelumnya (S2 tahun lalu) yang tidak diimpor ke sistem ini.</p>
+        <p class="kosong">Data tidak tersedia — LPP memerlukan data penduduk periode sebelumnya (S2 tahun lalu) yang tidak diunggah ke sistem ini.</p>
     @else
         <x-laporan.tabel-kelurahan :wilayah-list="$wilayahList" :data="$lpp" :kolom="['Laju Pertumbuhan Penduduk (%)']" satuan="%" />
     @endif
@@ -190,7 +190,7 @@
     <x-laporan.tabel-kelurahan :wilayah-list="$wilayahList" :data="$angkatanKerja" :kolom="['Jumlah Penduduk Usia Kerja','Angkatan Kerja']" satuan="jiwa, usia 15-64 tahun" />
 
     <h3 style="font-size:9.5px;">4.2.3 Pengangguran / Tingkat Pengangguran</h3>
-    <p class="kosong">Data tidak tersedia secara terpisah — sheet PENGANGGURAN/STATUS_PEKERJAAN belum diimpor ke sistem ini.</p>
+    <p class="kosong">Data tidak tersedia secara terpisah — sheet PENGANGGURAN/STATUS_PEKERJAAN belum diunggah ke sistem ini.</p>
 
     <div class="pagebreak"></div>
 

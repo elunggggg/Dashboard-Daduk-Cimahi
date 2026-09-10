@@ -43,7 +43,7 @@ class ProfilKependudukanController extends Controller
     {
         $waktu = DimWaktu::orderByDesc('tahun')->orderByDesc('semester')->first();
 
-        abort_if($waktu === null, 404, 'Belum ada periode data yang diimpor.');
+        abort_if($waktu === null, 404, 'Belum ada periode data yang diunggah.');
 
         $wilayahList = DimWilayah::kelurahan()->orderBy('nama_kecamatan')->orderBy('nama_kelurahan')->get();
         $waktuId     = $waktu->id;

@@ -61,7 +61,7 @@
                     @endif
 
                     <h2 class="text-sm font-bold text-gray-900 flex items-center gap-1.5 mb-1">
-                        <i class="bi bi-file-earmark-arrow-down text-brand-700"></i> Ekspor Data
+                        <i class="bi bi-file-earmark-arrow-down text-brand-700"></i> Unduh Data
                     </h2>
                     <p class="text-xs text-gray-400 mb-3">Pilih penyaring lalu unduh data mentah dalam Excel atau PDF.</p>
 
@@ -103,7 +103,7 @@
                             <div class="flex-1 min-w-[150px]">
                                 <label class="block text-[11px] font-medium text-gray-500 mb-1">Format berkas</label>
                                 <select name="format" class="form-select text-xs py-2 w-full">
-                                    <option value="excel" @selected(($eksporFormatBawaan ?? 'excel') === 'excel')>Excel (.xlsx)</option>
+                                    <option value="excel" @selected(($eksporFormatBawaan ?? 'excel') === 'excel')>Excel (per-sheet, gaya DKB)</option>
                                     <option value="pdf" @selected(($eksporFormatBawaan ?? 'excel') === 'pdf')>PDF (maks. {{ number_format($eksporBatasPdf ?? 3000, 0, ',', '.') }} baris)</option>
                                 </select>
                             </div>
@@ -124,7 +124,7 @@
                      bisa dipindah/disembunyikan lewat menu "Bagian Dashboard". --}}
                 <div x-show="!loading && data && !data.ada_data" x-cloak class="card p-16 text-center text-gray-400">
                     <i class="bi bi-database-x text-3xl block mb-2"></i>
-                    Belum ada data. Silakan import data terlebih dahulu.
+                    Belum ada data. Silakan unggah data terlebih dahulu.
                 </div>
 
 

@@ -163,7 +163,7 @@ class DashboardDataController extends Controller
                     'laki'      => collect(self::AGE_ORDER)->map(fn ($l) => round(($ageData->get($l, 0)) * $rasioLokal))->values(),
                     'perempuan' => collect(self::AGE_ORDER)->map(fn ($l) => round(($ageData->get($l, 0)) * (1 - $rasioLokal)))->values(),
                     'estimasi'  => true,
-                    'catatan'   => 'Rincian Laki-laki/Perempuan per kelompok umur belum diimpor dari DKB — nilai di sini ditaksir dari rasio L/P wilayah terpilih.',
+                    'catatan'   => 'Rincian Laki-laki/Perempuan per kelompok umur belum diunggah dari DKB — nilai di sini ditaksir dari rasio L/P wilayah terpilih.',
                 ],
                 'produktif' => $this->keSeri($produktifData),
                 'wajib_ktp_umur' => [

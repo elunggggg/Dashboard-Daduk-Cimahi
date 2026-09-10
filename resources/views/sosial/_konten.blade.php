@@ -232,7 +232,7 @@
     <div class="card h-full">
         <div class="p-4 border-b border-gray-100">
             <h2 class="text-sm font-bold text-gray-900">Status Perkawinan KK per Kecamatan</h2>
-            <p class="text-xs text-gray-400">Total lintas kelompok umur — rincian usia ada di Ekspor PDF</p>
+            <p class="text-xs text-gray-400">Total lintas kelompok umur — rincian usia ada di Unduh PDF</p>
         </div>
         <div class="p-4 overflow-x-auto">
             <table class="w-full text-xs">
@@ -263,7 +263,7 @@
     <div class="card h-full">
         <div class="p-4 border-b border-gray-100">
             <h2 class="text-sm font-bold text-gray-900">Agama per Kecamatan</h2>
-            <p class="text-xs text-gray-400">Total lintas kelompok umur — rincian usia ada di Ekspor PDF</p>
+            <p class="text-xs text-gray-400">Total lintas kelompok umur — rincian usia ada di Unduh PDF</p>
         </div>
         <div class="p-4 overflow-x-auto">
             <table class="w-full text-xs">

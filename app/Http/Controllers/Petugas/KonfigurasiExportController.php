@@ -109,7 +109,7 @@ class KonfigurasiExportController extends Controller
         $pengaturan->fill($request->validated())->save();
         $this->audit->updated($pengaturan, $sebelum);
 
-        return back()->with('success', 'Pengaturan format ekspor disimpan.');
+        return back()->with('success', 'Pengaturan format unduhan disimpan.');
     }
 
     public function reset(): RedirectResponse
@@ -123,7 +123,7 @@ class KonfigurasiExportController extends Controller
             'aksi' => 'reset ke kolom bawaan',
         ]);
 
-        return back()->with('success', 'Konfigurasi kolom ekspor dikembalikan ke bawaan.');
+        return back()->with('success', 'Konfigurasi kolom unduhan dikembalikan ke bawaan.');
     }
 
     /** Tukar urutan satu kolom dengan tetangga di atas/bawahnya, lalu nomori ulang 10,20,30… */

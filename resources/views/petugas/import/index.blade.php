@@ -1,4 +1,4 @@
-<x-layouts.app title="Import Data" breadcrumb="Halaman Petugas / Import Data">
+<x-layouts.app title="Unggah Data" breadcrumb="Halaman Petugas / Unggah Data">
 
     {{-- Daftar galat baris, ditaruh di atas agar langsung terlihat --}}
     @if (session('import_errors'))
@@ -152,9 +152,9 @@
                             {{-- Mode B tidak punya pratinjau, jadi konfirmasinya di sinilah
                                  satu-satunya kesempatan Petugas membatalkan. --}}
                             <x-konfirmasi form="form-import-template" varian="peringatan"
-                                judul="Proses import sekarang?"
+                                judul="Proses unggah sekarang?"
                                 pesan="Mode template langsung menyimpan ke database tanpa pratinjau."
-                                tombol="Ya, Proses Sekarang" pemicu="Proses Import" ikon="bi-upload"
+                                tombol="Ya, Proses Sekarang" pemicu="Proses Unggah" ikon="bi-upload"
                                 kelas="btn-primary">
                                 <ul class="list-disc list-inside space-y-1 text-xs text-gray-600">
                                     <li>Bersifat <strong>semua-atau-tidak sama sekali</strong> — satu baris tidak valid
@@ -189,7 +189,7 @@
             {{-- ── Riwayat ── --}}
             <div class="card overflow-hidden">
                 <div class="p-4 border-b border-gray-100">
-                    <h2 class="text-sm font-bold text-gray-900">Riwayat Import</h2>
+                    <h2 class="text-sm font-bold text-gray-900">Riwayat Unggah</h2>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="tw-table">
@@ -232,7 +232,7 @@
                                             {{-- Angkanya dicoret, bukan dihapus: jumlah itu tetap
                                                  fakta sejarah, hanya saja tidak berlaku lagi. --}}
                                             <span class="line-through text-gray-400"
-                                                  title="Jumlah baris saat import ini berhasil">
+                                                  title="Jumlah baris saat unggahan ini berhasil">
                                                 {{ number_format($r->jumlah_baris, 0, ',', '.') }}
                                             </span>
                                             <span class="block text-[11px] font-semibold text-gray-400">
@@ -301,7 +301,7 @@
                                                 $ditimpa = (int) ($r->catatan_hasil['diperbarui'] ?? 0);
                                             @endphp
                                             <x-konfirmasi :action="route('petugas.import.hapus-data', $r)" method="DELETE"
-                                                judul="Hapus data hasil import ini?"
+                                                judul="Hapus data hasil unggah ini?"
                                                 pesan="Dipakai bila berkas atau periodenya ternyata salah. Setelah dihapus, unggah berkas yang benar."
                                                 tombol="Ya, Hapus Datanya" pemicu="Hapus Data"
                                                 kelas="text-xs font-semibold text-red-600 hover:underline">
@@ -325,9 +325,9 @@
 
                                                 @if ($barisAktif < $r->jumlah_baris)
                                                     <p class="mt-2 text-xs text-gray-500">
-                                                        Import ini semula menulis
+                                                        Unggahan ini semula menulis
                                                         {{ number_format($r->jumlah_baris, 0, ',', '.') }} baris;
-                                                        sisanya sudah ditimpa import yang lebih baru sehingga tidak ikut
+                                                        sisanya sudah ditimpa unggahan yang lebih baru sehingga tidak ikut
                                                         terhapus.
                                                     </p>
                                                 @endif
@@ -346,7 +346,7 @@
                                                 <p class="mt-2 text-xs text-gray-500">
                                                     Periode yang tidak punya data lagi setelah ini akan ikut dibuang
                                                     dari
-                                                    dropdown filter. Catatan riwayat import ini tetap disimpan.
+                                                    dropdown filter. Catatan riwayat unggah ini tetap disimpan.
                                                 </p>
                                             </x-konfirmasi>
                                         @endif
@@ -356,7 +356,7 @@
                                 <tr>
                                     <td colspan="7" class="text-center py-10 text-gray-400">
                                         <i class="bi bi-inbox text-2xl block mb-2"></i>
-                                        Belum ada riwayat import.
+                                        Belum ada riwayat unggah.
                                     </td>
                                 </tr>
                             @endforelse

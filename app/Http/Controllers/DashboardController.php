@@ -18,12 +18,12 @@ use Illuminate\View\View;
 class DashboardController extends Controller
 {
     public const MENU = [
-        ['route' => 'petugas.import.index', 'label' => 'Import Data', 'icon' => 'bi-upload', 'deskripsi' => 'Unggah data DKB mentah atau template flat ke database.', 'warna' => 'blue'],
+        ['route' => 'petugas.import.index', 'label' => 'Unggah Data', 'icon' => 'bi-upload', 'deskripsi' => 'Unggah data DKB mentah atau template flat ke database.', 'warna' => 'blue'],
         ['route' => 'petugas.wilayah.index', 'label' => 'Kelola Wilayah', 'icon' => 'bi-geo-alt', 'deskripsi' => 'Kelola data kelurahan/kecamatan dan alias nama wilayah.', 'warna' => 'emerald'],
         ['route' => 'petugas.pengguna.index', 'label' => 'Kelola Pengguna', 'icon' => 'bi-person-gear', 'deskripsi' => 'Kelola akun Petugas yang bisa masuk ke sistem.', 'warna' => 'violet'],
         ['route' => 'petugas.metadata.index', 'label' => 'Kelola Metadata', 'icon' => 'bi-book', 'deskripsi' => 'Kelola definisi, satuan, dan sumber tiap indikator.', 'warna' => 'amber'],
         ['route' => 'petugas.indikator.index', 'label' => 'Kelola Indikator', 'icon' => 'bi-list-check', 'deskripsi' => 'Aktifkan/nonaktifkan indikator dan koreksi nilai per kelurahan.', 'warna' => 'indigo'],
-        ['route' => 'petugas.konfigurasi-export.index', 'label' => 'Konfigurasi Export', 'icon' => 'bi-file-earmark-arrow-down', 'deskripsi' => 'Atur kolom, urutan, label, dan format berkas ekspor data agregat.', 'warna' => 'rose'],
+        ['route' => 'petugas.konfigurasi-export.index', 'label' => 'Konfigurasi Unduh', 'icon' => 'bi-file-earmark-arrow-down', 'deskripsi' => 'Atur kolom, urutan, label, dan format berkas unduhan data agregat.', 'warna' => 'rose'],
         ['route' => 'petugas.pengaturan.edit', 'label' => 'Tampilan Dashboard', 'icon' => 'bi-image', 'deskripsi' => 'Ganti header dan logo aplikasi pada Dashboard Publik.', 'warna' => 'pink'],
         ['route' => 'petugas.audit.index', 'label' => 'Audit Log', 'icon' => 'bi-journal-text', 'deskripsi' => 'Riwayat seluruh aktivitas Petugas di sistem.', 'warna' => 'slate'],
         ['route' => 'petugas.backup.index', 'label' => 'Backup Database', 'icon' => 'bi-database-check', 'deskripsi' => 'Buat dan unduh cadangan database.', 'warna' => 'teal'],

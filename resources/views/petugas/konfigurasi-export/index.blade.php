@@ -1,27 +1,26 @@
-<x-layouts.app title="Konfigurasi Export" breadcrumb="Halaman Petugas / Konfigurasi Export">
+<x-layouts.app title="Konfigurasi Unduh" breadcrumb="Halaman Petugas / Konfigurasi Unduh">
 
     <div class="max-w-4xl space-y-5">
 
         <div class="card p-4 bg-brand-50/40 border-brand-100 text-sm text-gray-600">
             <p class="flex items-start gap-2 mb-2">
                 <i class="bi bi-info-circle-fill text-brand-600 mt-0.5"></i>
-                <span>Mengatur <strong>bentuk berkas ekspor</strong> data agregat (Excel &amp; PDF). Setiap perubahan langsung tersimpan &mdash; tidak ada tombol "Simpan" untuk daftar kolom.</span>
+                <span>Mengatur <strong>bentuk berkas unduhan</strong> data agregat. Setiap perubahan langsung tersimpan &mdash; tidak ada tombol "Simpan" untuk daftar kolom.</span>
             </p>
             <ul class="list-disc list-inside space-y-1 pl-1">
-                <li><i class="bi bi-eye"></i> / <i class="bi bi-eye-slash"></i> &mdash; ikutkan / hilangkan kolom dari berkas ekspor.</li>
-                <li><i class="bi bi-arrow-up"></i> <i class="bi bi-arrow-down"></i> &mdash; geser urutan kolom.</li>
-                <li><strong>Label</strong> &mdash; teks header kolom di berkas hasil unduhan (boleh diubah).</li>
+                <li><strong>Unduh PDF</strong> &mdash; memakai daftar kolom di bawah (satu tabel rata): <i class="bi bi-eye"></i>/<i class="bi bi-eye-slash"></i> ikutkan/hilangkan kolom, <i class="bi bi-arrow-up"></i><i class="bi bi-arrow-down"></i> geser urutan, <strong>Label</strong> ganti teks header.</li>
+                <li><strong>Unduh Excel</strong> &mdash; selalu bergaya berkas DKB: <em>satu sheet per indikator</em>, baris = kelurahan (+ subtotal kecamatan &amp; total Kota), kolom = kategori. Daftar kolom di bawah tidak berlaku untuk Excel.</li>
             </ul>
             <p class="mt-2 text-xs text-gray-500">
-                Kolom <strong>Laki-laki</strong> &amp; <strong>Perempuan</strong> hanya muncul saat mengekspor indikator yang punya rincian jenis kelamin
-                (mis. Umur Tunggal, Status Kawin, Agama). Untuk indikator lain kolom itu otomatis dilewati walau diaktifkan.
+                Kolom <strong>Laki-laki</strong> &amp; <strong>Perempuan</strong> hanya muncul saat mengunduh indikator yang punya rincian jenis kelamin
+                (mis. Umur Tunggal, Status Kawin, Agama). Untuk indikator lain kolom itu otomatis dilewati.
             </p>
         </div>
 
         {{-- ── Daftar kolom ── --}}
         <div class="card overflow-hidden">
             <div class="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
-                <h2 class="text-sm font-bold text-gray-900">Kolom Berkas Ekspor</h2>
+                <h2 class="text-sm font-bold text-gray-900">Kolom Unduh PDF</h2>
                 <span class="text-xs text-gray-400">{{ $kolom->where('aktif', true)->count() }} / {{ $kolom->count() }} aktif</span>
             </div>
             <div class="divide-y divide-gray-50">
@@ -33,7 +32,7 @@
                             @csrf @method('PATCH')
                             <button type="submit" name="aktif" value="{{ $k->aktif ? 0 : 1 }}"
                                     class="p-1.5 rounded-lg {{ $k->aktif ? 'text-green-600 hover:bg-green-50' : 'text-gray-400 hover:bg-gray-100' }}"
-                                    title="{{ $k->aktif ? 'Hilangkan dari ekspor' : 'Ikutkan ke ekspor' }}">
+                                    title="{{ $k->aktif ? 'Hilangkan dari unduhan' : 'Ikutkan ke unduhan' }}">
                                 <i class="bi {{ $k->aktif ? 'bi-eye-fill' : 'bi-eye-slash' }}"></i>
                             </button>
                         </form>
@@ -77,12 +76,12 @@
                     :action="route('petugas.konfigurasi-export.reset')"
                     method="POST"
                     varian="peringatan"
-                    judul="Kembalikan kolom ekspor ke bawaan?"
+                    judul="Kembalikan kolom unduhan ke bawaan?"
                     pesan="Seluruh label, urutan, dan status aktif kolom dikembalikan ke keadaan awal (9 kolom standar). Tidak bisa dibatalkan."
                     tombol="Ya, Reset"
                     ikon="bi-arrow-counterclockwise"
                     pemicu="Reset ke Bawaan"
-                    judul-pemicu="Kembalikan kolom ekspor ke bawaan"
+                    judul-pemicu="Kembalikan kolom unduhan ke bawaan"
                     kelas="btn-secondary text-sm" />
             </div>
         </div>
@@ -90,7 +89,7 @@
         {{-- ── Pengaturan format berkas ── --}}
         <div class="card p-6">
             <h2 class="text-sm font-bold text-gray-900 mb-1">Pengaturan Format Berkas</h2>
-            <p class="text-xs text-gray-400 mb-5">Berlaku untuk fitur Ekspor di Dashboard Publik.</p>
+            <p class="text-xs text-gray-400 mb-5">Berlaku untuk fitur Unduh di Dashboard Publik.</p>
 
             <form method="POST" action="{{ route('petugas.konfigurasi-export.pengaturan') }}" class="grid gap-4 sm:grid-cols-2">
                 @csrf @method('PATCH')
@@ -118,7 +117,7 @@
                     <input type="number" name="batas_baris_pdf" id="batas_baris_pdf" min="100" max="100000"
                            value="{{ old('batas_baris_pdf', $pengaturan->batas_baris_pdf) }}"
                            class="form-input @error('batas_baris_pdf') border-red-400 @enderror">
-                    <p class="mt-1 text-xs text-gray-400">Ekspor PDF di atas angka ini ditolak (dompdf lambat/kehabisan memori). Excel tidak dibatasi.</p>
+                    <p class="mt-1 text-xs text-gray-400">Unduh PDF di atas angka ini ditolak (dompdf lambat/kehabisan memori). Excel tidak dibatasi.</p>
                     @error('batas_baris_pdf') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
                 </div>
 
@@ -151,8 +150,8 @@
         {{-- ── Pratinjau ── --}}
         <div class="card overflow-hidden">
             <div class="px-4 py-3 border-b border-gray-100">
-                <h2 class="text-sm font-bold text-gray-900">Pratinjau Berkas Ekspor</h2>
-                <p class="text-xs text-gray-400">15 baris pertama ekspor "semua indikator" (tanpa filter), memakai konfigurasi kolom di atas.</p>
+                <h2 class="text-sm font-bold text-gray-900">Pratinjau Unduh PDF</h2>
+                <p class="text-xs text-gray-400">15 baris pertama unduh PDF "semua indikator" (tanpa filter), memakai konfigurasi kolom di atas. Unduh Excel tidak seperti ini &mdash; lihat keterangan di atas.</p>
             </div>
             <div class="overflow-x-auto">
                 <table class="tw-table text-xs">

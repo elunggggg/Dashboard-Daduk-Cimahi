@@ -71,12 +71,12 @@ class ImportController extends Controller
 
     public function template(): BinaryFileResponse
     {
-        return Excel::download(new TemplateImportExport(false), 'template-import-kosong.xlsx');
+        return Excel::download(new TemplateImportExport(false), 'template-unggah-kosong.xlsx');
     }
 
     public function templateContoh(): BinaryFileResponse
     {
-        return Excel::download(new TemplateImportExport(true), 'template-import-contoh-terisi.xlsx');
+        return Excel::download(new TemplateImportExport(true), 'template-unggah-contoh-terisi.xlsx');
     }
 
     // ── MODE A: unggah → pratinjau → konfirmasi ───────────────────────────────
@@ -125,14 +125,14 @@ class ImportController extends Controller
     {
         if (! $import->bisaDikonfirmasi()) {
             return redirect()->route('petugas.import.index')
-                ->with('error', 'Import ini sudah diselesaikan atau dibatalkan, jadi tidak bisa dipratinjau lagi.');
+                ->with('error', 'Unggahan ini sudah diselesaikan atau dibatalkan, jadi tidak bisa dipratinjau lagi.');
         }
 
         $hasil = $this->parse($import, $request);
 
         if ($hasil === null) {
             return redirect()->route('petugas.import.index')
-                ->with('error', 'Berkas import tidak ditemukan lagi di penyimpanan. Silakan unggah ulang.');
+                ->with('error', 'Berkas unggahan tidak ditemukan lagi di penyimpanan. Silakan unggah ulang.');
         }
 
         // Deteksi duplikat hanya masuk akal kalau periodenya sudah pasti.
@@ -150,7 +150,7 @@ class ImportController extends Controller
     {
         if (! $import->bisaDikonfirmasi()) {
             return redirect()->route('petugas.import.index')
-                ->with('error', 'Import ini sudah diselesaikan atau dibatalkan.');
+                ->with('error', 'Unggahan ini sudah diselesaikan atau dibatalkan.');
         }
 
         $data = $request->validate([
@@ -165,13 +165,13 @@ class ImportController extends Controller
 
         if ($hasil === null) {
             return redirect()->route('petugas.import.index')
-                ->with('error', 'Berkas import tidak ditemukan lagi di penyimpanan. Silakan unggah ulang.');
+                ->with('error', 'Berkas unggahan tidak ditemukan lagi di penyimpanan. Silakan unggah ulang.');
         }
 
         // Diperiksa ulang di sini, bukan hanya di halaman pratinjau: berkas atau
         // konfigurasinya bisa saja berubah di antara dua langkah tersebut.
         if ($hasil->adaGalat()) {
-            return back()->with('error', 'Import dibatalkan — masih ada galat struktur pada berkas.');
+            return back()->with('error', 'Unggahan dibatalkan — masih ada galat struktur pada berkas.');
         }
 
         try {
@@ -187,7 +187,7 @@ class ImportController extends Controller
 
         return redirect()->route('petugas.import.index')->with(
             'success',
-            "Import berhasil — {$ringkas['baru']} baris baru, {$ringkas['diperbarui']} diperbarui, "
+            "Unggahan berhasil — {$ringkas['baru']} baris baru, {$ringkas['diperbarui']} diperbarui, "
             ."{$ringkas['dilewati']} dilewati (Semester {$data['semester']} Tahun {$data['tahun']})."
         );
     }
@@ -213,7 +213,7 @@ class ImportController extends Controller
     {
         if (! $import->bisaHapusData()) {
             return redirect()->route('petugas.import.index')
-                ->with('error', 'Import ini tidak punya data yang bisa dihapus — mungkin sudah dihapus sebelumnya, atau seluruh barisnya sudah ditimpa import yang lebih baru.');
+                ->with('error', 'Unggahan ini tidak punya data yang bisa dihapus — mungkin sudah dihapus sebelumnya, atau seluruh barisnya sudah ditimpa unggahan yang lebih baru.');
         }
 
         $ringkas = DB::transaction(function () use ($request, $import) {
@@ -246,7 +246,7 @@ class ImportController extends Controller
             ]);
 
             $this->audit->record(AuditLogService::AKSI_DELETE, 'data_agregat', null, [
-                'alasan'          => 'penghapusan data hasil import',
+                'alasan'          => 'penghapusan data hasil unggahan',
                 'import_id'       => $import->id,
                 'nama_file'       => $import->nama_file,
                 'periode'         => "Semester {$import->semester} Tahun {$import->tahun}",
@@ -275,7 +275,7 @@ class ImportController extends Controller
     {
         if (! $import->bisaDikonfirmasi()) {
             return redirect()->route('petugas.import.index')
-                ->with('error', 'Import ini sudah diselesaikan atau dibatalkan.');
+                ->with('error', 'Unggahan ini sudah diselesaikan atau dibatalkan.');
         }
 
         // Berkasnya ikut dibuang: import yang dibatalkan tidak menyisakan data
@@ -290,7 +290,7 @@ class ImportController extends Controller
         ]);
 
         return redirect()->route('petugas.import.index')
-            ->with('success', 'Import dibatalkan. Tidak ada data yang diubah.');
+            ->with('success', 'Unggahan dibatalkan. Tidak ada data yang diubah.');
     }
 
     /**
@@ -363,7 +363,7 @@ class ImportController extends Controller
             ]);
 
             return back()
-                ->with('error', 'Import dibatalkan — tidak ada data yang diubah.')
+                ->with('error', 'Unggahan dibatalkan — tidak ada data yang diubah.')
                 ->with('import_errors', $ditampilkan)
                 ->with('import_errors_sisa', max(0, $sisa));
         }
@@ -395,7 +395,7 @@ class ImportController extends Controller
 
         return redirect()
             ->route('petugas.import.index')
-            ->with('success', "Import selesai — {$import->jumlahBaris} baris diproses "
+            ->with('success', "Unggahan selesai — {$import->jumlahBaris} baris diproses "
                 ."({$import->jumlahBaru} baru, {$import->jumlahDiperbarui} diperbarui).");
     }
 }

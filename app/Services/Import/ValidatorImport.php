@@ -158,7 +158,7 @@ class ValidatorImport
         $jumlah = count($perKelurahan);
 
         $this->peringatan[] = "Sheet '{$sheet}': {$jumlah} kelurahan punya nilai galat rumus ({$kode}) "
-            .'di kolom data utama, jadi angkanya TIDAK diimpor — bukan disimpan sebagai 0. Terdampak: '
+            .'di kolom data utama, jadi angkanya TIDAK diunggah — bukan disimpan sebagai 0. Terdampak: '
             .implode('; ', $rincian).'. Perbaiki rumusnya di Excel (atau salin-tempel hasilnya sebagai '
             .'nilai) lalu unggah ulang, atau isi lewat Mode B untuk kolom yang bersangkutan.';
     }
@@ -174,7 +174,7 @@ class ValidatorImport
     public function selGalatDiLuarDataUtama(string $sheet, int $jumlahSel, string $kode, int $barisAwal, int $barisAkhir): void
     {
         $this->info[] = "Sheet '{$sheet}': {$jumlahSel} sel berisi galat rumus ({$kode}) di area di luar "
-            ."tabel utama — tabel pivot, baris subtotal, atau catatan kaki. Importer hanya membaca baris "
+            ."tabel utama — tabel pivot, baris subtotal, atau catatan kaki. Sistem hanya membaca baris "
             ."{$barisAwal}–{$barisAkhir}, jadi sel itu tidak dipakai dan data utama tidak terpengaruh.";
     }
 

@@ -1,4 +1,4 @@
-<x-layouts.app title="Pratinjau Import" breadcrumb="Halaman Petugas / Import Data / Pratinjau">
+<x-layouts.app title="Pratinjau Unggahan" breadcrumb="Halaman Petugas / Unggah Data / Pratinjau">
 
     <div class="mb-5 flex flex-wrap items-start justify-between gap-3">
         <div>
@@ -10,10 +10,10 @@
         </div>
         <x-konfirmasi
             :action="route('petugas.import.batal', $import)"
-            judul="Batalkan import ini?"
+            judul="Batalkan unggahan ini?"
             pesan="Berkas yang sudah diunggah akan dihapus dari server dan pratinjau ini tidak bisa dibuka lagi."
-            tombol="Ya, Batalkan Import"
-            pemicu="Batalkan Import"
+            tombol="Ya, Batalkan Unggahan"
+            pemicu="Batalkan Unggahan"
             ikon="bi-x-lg"
             kelas="btn-secondary">
             <p class="text-xs text-gray-600">
@@ -28,7 +28,7 @@
         <div class="alert-error mb-5">
             <p class="font-semibold mb-2 flex items-center gap-2">
                 <i class="bi bi-x-octagon-fill"></i>
-                {{ count($hasil->galat) }} masalah struktur — import tidak bisa dilanjutkan
+                {{ count($hasil->galat) }} masalah struktur — unggahan tidak bisa dilanjutkan
             </p>
             <ul class="list-disc list-inside space-y-1 text-xs">
                 @foreach($hasil->galat as $g)

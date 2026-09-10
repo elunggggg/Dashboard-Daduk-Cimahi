@@ -16,7 +16,7 @@
 
         <div class="alert-info text-xs">
             <i class="bi bi-info-circle mr-1"></i>
-            Mengisi kombinasi wilayah + periode yang <strong>sudah ada datanya</strong> (mis. hasil import Excel)
+            Mengisi kombinasi wilayah + periode yang <strong>sudah ada datanya</strong> (mis. hasil unggah Excel)
             akan MENGGANTI nilai lama — perubahan ini tercatat di Audit Log lengkap dengan nilai sebelum & sesudahnya.
         </div>
 
@@ -64,7 +64,7 @@
                         @forelse($waktuList as $w)
                             <option value="{{ $w->id }}" @selected(old('waktu_id') == $w->id)>{{ $w->label }}</option>
                         @empty
-                            <option value="" disabled>Belum ada periode — import data dulu</option>
+                            <option value="" disabled>Belum ada periode — unggah data dulu</option>
                         @endforelse
                     </select>
                     @error('waktu_id') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
@@ -104,7 +104,7 @@
                                 <td class="text-right tabular-nums font-semibold">{{ number_format($d->jumlah, 0, ',', '.') }}</td>
                                 <td>
                                     @if($d->import_id)
-                                        <span class="badge-blue">Import #{{ $d->import_id }}</span>
+                                        <span class="badge-blue">Unggahan #{{ $d->import_id }}</span>
                                     @else
                                         <span class="badge-gray">Manual</span>
                                     @endif

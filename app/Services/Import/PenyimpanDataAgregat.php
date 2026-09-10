@@ -103,17 +103,17 @@ class PenyimpanDataAgregat
     public function simpan(HasilPratinjau $hasil, ImportExcel $import, string $modeDuplikat): array
     {
         if ($hasil->adaGalat()) {
-            throw new RuntimeException('Import ditolak: masih ada galat struktur yang belum diselesaikan.');
+            throw new RuntimeException('Unggahan ditolak: masih ada galat struktur yang belum diselesaikan.');
         }
 
         if ($hasil->tahun === null || $hasil->semester === null) {
-            throw new RuntimeException('Import ditolak: tahun dan semester wajib ditentukan.');
+            throw new RuntimeException('Unggahan ditolak: tahun dan semester wajib ditentukan.');
         }
 
         $baris = $this->rapikan($hasil);
 
         if ($baris === []) {
-            throw new RuntimeException('Import ditolak: tidak ada satu pun baris yang bisa disimpan.');
+            throw new RuntimeException('Unggahan ditolak: tidak ada satu pun baris yang bisa disimpan.');
         }
 
         $ringkas = DB::transaction(function () use ($baris, $hasil, $import, $modeDuplikat) {

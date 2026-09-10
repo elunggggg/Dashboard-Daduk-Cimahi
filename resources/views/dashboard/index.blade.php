@@ -33,7 +33,7 @@
         @if ($stat['import_terakhir'])
             <p class="text-xs text-gray-400 flex items-center gap-1.5">
                 <i class="bi bi-clock-history"></i>
-                Import data terakhir: {{ $stat['import_terakhir']->translatedFormat('d M Y H:i') }}
+                Unggah data terakhir: {{ $stat['import_terakhir']->translatedFormat('d M Y H:i') }}
             </p>
         @endif
 

@@ -84,13 +84,13 @@
                     Halaman Petugas</p>
                 @php
                     $petugasItems = [
-                        ['route' => 'petugas.import.index', 'label' => 'Import Data', 'icon' => 'bi-upload'],
+                        ['route' => 'petugas.import.index', 'label' => 'Unggah Data', 'icon' => 'bi-upload'],
                         ['route' => 'petugas.wilayah.index', 'label' => 'Kelola Wilayah', 'icon' => 'bi-geo-alt'],
                         ['route' => 'petugas.pengguna.index', 'label' => 'Kelola Pengguna', 'icon' => 'bi-person-gear'],
                         ['route' => 'petugas.metadata.index', 'label' => 'Kelola Metadata', 'icon' => 'bi-book'],
                         ['route' => 'petugas.indikator.index', 'label' => 'Kelola Indikator', 'icon' => 'bi-list-check'],
                         ['route' => 'petugas.seksi.index', 'label' => 'Bagian Dashboard', 'icon' => 'bi-ui-checks-grid'],
-                        ['route' => 'petugas.konfigurasi-export.index', 'label' => 'Konfigurasi Export', 'icon' => 'bi-file-earmark-arrow-down'],
+                        ['route' => 'petugas.konfigurasi-export.index', 'label' => 'Konfigurasi Unduh', 'icon' => 'bi-file-earmark-arrow-down'],
                         ['route' => 'petugas.pengaturan.edit', 'label' => 'Tampilan Sistem', 'icon' => 'bi-image'],
                         ['route' => 'petugas.audit.index', 'label' => 'Audit Log', 'icon' => 'bi-journal-text'],
                         ['route' => 'petugas.backup.index', 'label' => 'Backup Database', 'icon' => 'bi-database-check'],

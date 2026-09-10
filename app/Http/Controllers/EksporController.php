@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\DataAgregatDkbExport;
 use App\Exports\DataAgregatExport;
 use App\Models\Laporan;
 use App\Models\PengaturanExport;
@@ -44,12 +45,11 @@ class EksporController extends Controller
 
         $pengaturan = PengaturanExport::current();
 
-        $export = new DataAgregatExport($waktuId, $kecamatan, $indikator);
-        $query  = DataAgregatExport::query($waktuId, $kecamatan, $indikator);
-        $total  = (clone $query)->count();
+        $query = DataAgregatExport::query($waktuId, $kecamatan, $indikator);
+        $total = (clone $query)->count();
 
         if ($total === 0) {
-            return back()->with('error', 'Tidak ada data yang cocok dengan filter — tidak ada yang diekspor.');
+            return back()->with('error', 'Tidak ada data yang cocok dengan filter — tidak ada yang diunduh.');
         }
 
         // Diperiksa sebelum apa pun dicatat — ekspor yang ditolak tidak boleh
@@ -69,15 +69,24 @@ class EksporController extends Controller
         ]);
 
         if ($data['format'] === 'excel') {
-            return Excel::download($export, "data-agregat-{$stamp}.xlsx");
+            // Excel = bergaya DKB: satu sheet per indikator (tata letak pivot
+            // wilayah × kategori). Bisa lama/berat bila tanpa filter indikator.
+            @set_time_limit(300);
+
+            return Excel::download(
+                new DataAgregatDkbExport($waktuId, $kecamatan, $indikator),
+                "data-agregat-dkb-{$stamp}.xlsx",
+            );
         }
 
         $orientasiPdf = $pengaturan->orientasi_pdf === 'potrait' ? 'portrait' : 'landscape';
 
+        $pdfExport = new DataAgregatExport($waktuId, $kecamatan, $indikator);
+
         $pdf = Pdf::loadView('ekspor.pdf', [
             'judul'       => $judul,
-            'kolom'       => $export->kolomAktif(),
-            'baris'       => $export->barisTampil(),
+            'kolom'       => $pdfExport->kolomAktif(),
+            'baris'       => $pdfExport->barisTampil(),
             'kopJudul'    => $pengaturan->kop_judul_tampil,
             'kopSubjudul' => $pengaturan->kop_subjudul_tampil,
             'dicetak'     => now(),

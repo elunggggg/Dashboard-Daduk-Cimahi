@@ -25,7 +25,7 @@
             <h2 class="text-lg font-bold text-gray-900 mb-1">Ejaan Alternatif (Alias)</h2>
             <p class="text-sm text-gray-500 mb-5">
                 Variasi penulisan nama kelurahan ini yang mungkin muncul di berkas Excel Disdukcapil.
-                Saat import, baris yang namanya cocok dengan salah satu alias tetap dikenali sebagai
+                Saat unggah data, baris yang namanya cocok dengan salah satu alias tetap dikenali sebagai
                 <strong>{{ $wilayah->nama_kelurahan }}</strong>.
             </p>
 
@@ -43,7 +43,7 @@
                                 :action="route('petugas.wilayah.alias.hapus', $alias)"
                                 method="DELETE"
                                 judul="Hapus alias {{ $alias->nama_alias }}?"
-                                pesan="Setelah dihapus, baris Excel yang memakai ejaan ini tidak lagi dikenali sebagai {{ $wilayah->nama_kelurahan }} dan akan terlewat saat import."
+                                pesan="Setelah dihapus, baris Excel yang memakai ejaan ini tidak lagi dikenali sebagai {{ $wilayah->nama_kelurahan }} dan akan terlewat saat unggah data."
                                 tombol="Ya, Hapus Alias"
                                 pemicu="Hapus"
                                 kelas="text-xs font-semibold text-red-600 hover:underline" />

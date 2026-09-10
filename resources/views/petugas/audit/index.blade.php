@@ -8,7 +8,12 @@
             'LOGIN'  => ['badge-gray',  'bi-box-arrow-in-right'],
             'LOGOUT' => ['badge-gray',  'bi-box-arrow-left'],
             'IMPORT' => ['badge-blue',  'bi-upload'],
+            'EKSPOR' => ['badge-gray',  'bi-download'],
         ];
+        // Nilai tersimpan di audit_logs TETAP (IMPORT/EKSPOR) demi keutuhan
+        // riwayat — hanya tampilannya yang diindonesiakan.
+        $aksiLabel = ['IMPORT' => 'Unggah', 'EKSPOR' => 'Unduh'];
+        $labelAksi = fn ($a) => $aksiLabel[$a] ?? $a;
     @endphp
 
     <div class="mb-5">
@@ -24,7 +29,7 @@
                 <select name="aksi" id="aksi" class="form-select">
                     <option value="">Semua</option>
                     @foreach($aksiList as $a)
-                        <option value="{{ $a }}" @selected(($filter['aksi'] ?? null) === $a)>{{ $a }}</option>
+                        <option value="{{ $a }}" @selected(($filter['aksi'] ?? null) === $a)>{{ $labelAksi($a) }}</option>
                     @endforeach
                 </select>
             </div>
@@ -90,7 +95,7 @@
                                 @endif
                             </td>
                             <td>
-                                <span class="{{ $badge }}"><i class="bi {{ $icon }} mr-1"></i>{{ $log->aksi }}</span>
+                                <span class="{{ $badge }}"><i class="bi {{ $icon }} mr-1"></i>{{ $labelAksi($log->aksi) }}</span>
                             </td>
                             <td class="text-gray-500 font-mono text-xs">{{ $log->subjek_tipe ?? '—' }}</td>
                             <td class="text-gray-500 font-mono text-xs">{{ $log->ip_address ?? '—' }}</td>

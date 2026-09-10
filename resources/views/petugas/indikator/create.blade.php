@@ -10,7 +10,7 @@
 
             <h2 class="text-lg font-bold text-gray-900 mb-1">Tambah Indikator Baru</h2>
             <p class="text-sm text-gray-500 mb-6">
-                Menambah indikator di sini TIDAK mengisi angkanya — data tetap harus masuk lewat Import
+                Menambah indikator di sini TIDAK mengisi angkanya — data tetap harus masuk lewat Unggah Data
                 atau diisi manual lewat mekanisme lain. Halaman ini hanya mendaftarkan kategorinya.
             </p>
 

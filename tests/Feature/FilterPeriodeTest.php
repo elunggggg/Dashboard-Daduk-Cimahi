@@ -108,7 +108,7 @@ class FilterPeriodeTest extends TestCase
 
         $this->actingAs($admin)->get('/dashboard')
             ->assertOk()
-            ->assertSee('Import Data')
+            ->assertSee('Unggah Data')
             ->assertSee('Kelola Wilayah');
     }
 

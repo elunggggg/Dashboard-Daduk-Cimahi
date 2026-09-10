@@ -269,7 +269,7 @@
     <div class="card">
         <div class="p-4 border-b border-gray-100">
             <h2 class="text-sm font-bold text-gray-900">Status Perkawinan per Kecamatan</h2>
-            <p class="text-xs text-gray-400">Total seluruh kelompok umur — rincian per kelompok umur tersedia di Ekspor PDF Buku Profil</p>
+            <p class="text-xs text-gray-400">Total seluruh kelompok umur — rincian per kelompok umur tersedia di Unduh PDF Buku Profil</p>
         </div>
         <div class="p-4 overflow-x-auto">
             @if ($perkawinanKuData->isEmpty())
@@ -308,7 +308,7 @@
     <div class="card h-full">
         <div class="p-4 border-b border-gray-100">
             <h2 class="text-sm font-bold text-gray-900">Disabilitas per Kecamatan</h2>
-            <p class="text-xs text-gray-400">Total lintas kelompok umur — rincian usia ada di Ekspor PDF</p>
+            <p class="text-xs text-gray-400">Total lintas kelompok umur — rincian usia ada di Unduh PDF</p>
         </div>
         <div class="p-4 overflow-x-auto">
             <table class="w-full text-xs">
@@ -391,7 +391,7 @@
                     <span class="font-medium text-gray-900">{{ number_format($jumlah, 0, ',', '.') }}</span>
                 </div>
             @endforeach
-            <p class="text-[11px] text-gray-400 mt-3">Rincian per jenis disabilitas & kelompok umur ada di Ekspor PDF Buku Profil.</p>
+            <p class="text-[11px] text-gray-400 mt-3">Rincian per jenis disabilitas & kelompok umur ada di Unduh PDF Buku Profil.</p>
         </div>
     </div>
 </x-seksi>
