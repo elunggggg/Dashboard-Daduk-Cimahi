@@ -61,20 +61,23 @@
 
     /* Data table */
     .tw-table           { @apply w-full text-sm text-left; }
-    .tw-table thead th  { @apply px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide bg-gray-50 border-b border-gray-200; }
+    .tw-table thead th  { @apply px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide bg-gray-50 border-b border-gray-200 border-r border-gray-200; }
     /* PENTING: warna teks sengaja ditaruh di <tbody>/<tfoot>, bukan di td.
        Selector `.tw-table tbody td` punya spesifisitas (0,1,2) sehingga akan
        MENIMPA utility seperti .text-green-600 (0,1,0) yang dipasang per sel.
        Lewat pewarisan, deklarasi langsung di td selalu menang. */
     .tw-table tbody     { @apply text-gray-700; }
-    .tw-table tbody td  { @apply px-4 py-3 border-b border-gray-100; }
+    .tw-table tbody td  { @apply px-4 py-3 border-b border-gray-100 border-r border-gray-100; }
     .tw-table tbody tr:hover { @apply bg-gray-50/70; }
     /* Baris terakhir tidak perlu garis bawah — tfoot sudah punya pemisah sendiri */
     .tw-table tbody tr:last-child td { @apply border-b-0; }
     /* tfoot sebelumnya tidak punya aturan sama sekali sehingga sel baris Total
        tampil tanpa padding dan tidak sejajar dengan kolom di atasnya. */
     .tw-table tfoot     { @apply bg-gray-50 font-bold text-gray-900; }
-    .tw-table tfoot td  { @apply px-4 py-3 border-t-2 border-gray-200; }
+    .tw-table tfoot td  { @apply px-4 py-3 border-t-2 border-gray-200 border-r border-gray-200; }
+    /* Garis pemisah antar-kolom: kolom terakhir tidak perlu garis kanan. */
+    .tw-table th:last-child,
+    .tw-table td:last-child { @apply border-r-0; }
 
     /* Alerts */
     .alert-info    { @apply rounded-lg bg-blue-50 border border-blue-200 p-4 text-sm text-blue-800; }

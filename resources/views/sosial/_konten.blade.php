@@ -235,7 +235,7 @@
             <p class="text-xs text-gray-400">Total lintas kelompok umur — rincian usia ada di Unduh PDF</p>
         </div>
         <div class="p-4 overflow-x-auto">
-            <table class="w-full text-xs">
+            <table class="w-full text-xs [&_th]:border-r [&_td]:border-r [&_th]:border-gray-200 [&_td]:border-gray-100 [&_th:last-child]:border-r-0 [&_td:last-child]:border-r-0 [&_th]:px-2 [&_td]:px-2 [&_th]:border-b [&_th]:border-b-gray-200">
                 <thead>
                     <tr class="text-left text-gray-400 border-b border-gray-100">
                         <th class="pb-2 font-medium">Kecamatan</th>
@@ -266,7 +266,7 @@
             <p class="text-xs text-gray-400">Total lintas kelompok umur — rincian usia ada di Unduh PDF</p>
         </div>
         <div class="p-4 overflow-x-auto">
-            <table class="w-full text-xs">
+            <table class="w-full text-xs [&_th]:border-r [&_td]:border-r [&_th]:border-gray-200 [&_td]:border-gray-100 [&_th:last-child]:border-r-0 [&_td:last-child]:border-r-0 [&_th]:px-2 [&_td]:px-2 [&_th]:border-b [&_th]:border-b-gray-200">
                 <thead>
                     <tr class="text-left text-gray-400 border-b border-gray-100">
                         <th class="pb-2 font-medium">Kecamatan</th>
@@ -297,7 +297,7 @@
             <p class="text-xs text-gray-400">Se-Kota — data ini tidak mengikuti filter wilayah</p>
         </div>
         <div class="p-4 overflow-x-auto">
-            <table class="w-full text-xs">
+            <table class="w-full text-xs [&_th]:border-r [&_td]:border-r [&_th]:border-gray-200 [&_td]:border-gray-100 [&_th:last-child]:border-r-0 [&_td:last-child]:border-r-0 [&_th]:px-2 [&_td]:px-2 [&_th]:border-b [&_th]:border-b-gray-200">
                 <thead>
                     <tr class="text-left text-gray-400 border-b border-gray-100">
                         <th class="pb-2 font-medium">Tingkat Pendidikan</th>

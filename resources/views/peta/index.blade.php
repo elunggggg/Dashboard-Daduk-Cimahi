@@ -252,26 +252,44 @@
                 return true;
             }
 
+            // Warna sorot untuk wilayah yang sedang difilter (kecamatan/kelurahan).
+            const SOROT_ISI    = '#14B8A6'; // teal-500
+            const SOROT_GARIS  = '#0F766E'; // teal-700
+
             // ── Lapisan Kelurahan (choropleth, tengah) ──────────────────────
             function gayaKelurahan(feature) {
+                const adaFilter = fokusKec || fokusWilayahId;
                 const aktif = dalamFilter(feature.properties);
+
+                // Wilayah yang cocok dengan filter → diberi WARNA SOROT (teal)
+                // + garis tebal supaya jelas menonjol dari choropleth merah.
+                if (adaFilter && aktif) {
+                    return {
+                        fillColor:   SOROT_ISI,
+                        weight:      4,
+                        opacity:     1,
+                        color:       SOROT_GARIS,
+                        fillOpacity: 0.6,
+                    };
+                }
+
                 return {
                     fillColor:   choroplethColor(pendudukPerWilayah[feature.properties.wilayah_id] ?? 0),
-                    weight:      aktif && (fokusKec || fokusWilayahId) ? 3 : 2,
+                    weight:      adaFilter ? 1 : 2,
                     opacity:     1,
                     color:       '#1e3a5f',
-                    fillOpacity: aktif ? 0.75 : 0.18,
+                    fillOpacity: adaFilter ? 0.28 : 0.75,
                 };
             }
 
             // ── Lapisan Kecamatan (outline paling tebal, atas) ──────────────
             function gayaKecamatan(feature) {
-                const aktif = ! fokusKec || feature.properties.kecamatan === fokusKec;
+                const fokus = fokusKec && feature.properties.kecamatan === fokusKec;
                 return {
                     fillOpacity: 0,
-                    weight: 4,
-                    opacity: aktif ? 1 : 0.35,
-                    color: '#0f172a',
+                    weight: fokus ? 5 : 4,
+                    opacity: fokusKec ? (fokus ? 1 : 0.3) : 1,
+                    color: fokus ? SOROT_GARIS : '#0f172a',
                 };
             }
 
@@ -298,6 +316,10 @@
                     <div style="height:10px;width:140px;border-radius:4px;background:linear-gradient(to right, rgb(${GRADASI_MUDA.join(',')}), rgb(${GRADASI_TUA.join(',')}));"></div>
                     <div style="display:flex;justify-content:space-between;margin-top:2px;color:#64748b;">
                         <span>${fmt(minPop)}</span><span>${fmt(maxPop)}</span>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:6px;margin-top:6px;">
+                        <span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:${SOROT_ISI};border:2px solid ${SOROT_GARIS};"></span>
+                        <span style="color:#64748b;">Wilayah difilter</span>
                     </div>
                 `;
                 return div;

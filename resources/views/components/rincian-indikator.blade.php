@@ -14,11 +14,15 @@
      indikator yang punya rincian jenis kelamin (umur tunggal, status kawin,
      agama, pendidikan, dll).
 
-     `scroll` (opsional, default true): kalau false, tabel dibiarkan memanjang
-     ke bawah tanpa area gulir (tidak ada `max-height`). Dipakai untuk daftar
-     panjang yang lebih enak dibaca utuh, mis. Umur Tunggal 0-99. --}}
+     `scroll` (opsional, default true):
+       - true    → area gulir pendek (max-h-56, ~8 baris)
+       - 'sedang'→ area gulir sedang (max-h-80, ~11-12 baris)
+       - false   → tanpa area gulir, tabel memanjang penuh --}}
 @props(['data', 'total' => null, 'satuan' => 'Jiwa', 'chartId' => null, 'range' => false, 'laki' => null, 'perempuan' => null, 'scroll' => true])
 @php
+    $gulirKelas = $scroll === 'sedang' ? 'overflow-auto max-h-80'
+        : ($scroll ? 'overflow-auto max-h-56' : 'overflow-x-auto');
+
     $lp = $laki !== null && $perempuan !== null;
     $lakiArr = $lp ? collect($laki)->mapWithKeys(fn ($v, $k) => [(string) $k => (int) $v])->all() : [];
     $perempuanArr = $lp ? collect($perempuan)->mapWithKeys(fn ($v, $k) => [(string) $k => (int) $v])->all() : [];
@@ -135,8 +139,8 @@
                 </div>
             @endif
 
-            <div class="{{ $scroll ? 'overflow-auto max-h-56' : 'overflow-x-auto' }} rounded-lg border border-gray-100">
-                <table class="w-full text-xs">
+            <div class="{{ $gulirKelas }} rounded-lg border border-gray-100">
+                <table class="w-full text-xs [&_th]:border-r [&_th]:border-white/15 [&_td]:border-r [&_td]:border-gray-100 [&_th:last-child]:border-r-0 [&_td:last-child]:border-r-0">
                     <thead class="sticky top-0">
                         <tr class="bg-brand-900 text-white">
                             <th class="px-3 py-2 text-left font-semibold">Kategori</th>
