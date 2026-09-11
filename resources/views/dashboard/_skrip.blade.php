@@ -1,23 +1,23 @@
 <script>
-    // ── x-data bersama Halaman Demografi & Sosial ──
-    // Kedua halaman kini memakai satu fungsi + satu gambarSemuaChart(): payload
-    // `charts` berisi gabungan metrik kedua halaman, dan tiap kanvas hanya
-    // digambar kalau elemennya ADA di DOM (bagian yang disembunyikan / dipindah
-    // ke halaman lain tidak punya kanvas → dilewati). Dipakai untuk kunjungan
-    // pertama (init) maupun tiap fetch filter (muat()).
-    // Shell Alpine tipis: dipakai zona grid Dashboard Publik (tanpa filter).
-    // Halaman Demografi/Sosial/Mobilitas kini merender kontennya di SERVER dan
-    // memuat ulang halaman penuh saat tombol "Terapkan" ditekan (bukan fetch
-    // AJAX lagi) — komponen ini tidak lagi mereka pakai.
-    function dashboardGridApp(seed) {
-        return {
-            kontenHtml: seed.konten_html,
-
-            init() {
-                this.$nextTick(() => window.gambarSemuaChartDaduk(seed.charts));
-            },
-        };
-    }
+    // ── Semua halaman ber-grid (Demografi/Sosial/Mobilitas/Dashboard Publik) ──
+    // kini merender kontennya LANGSUNG di server (Blade raw-echo), BUKAN
+    // lewat x-html/x-data Alpine. Dulu ada `dashboardGridApp()` sebagai
+    // shell Alpine tipis buat itu (dan sebelumnya lagi, mesin AJAX penuh) —
+    // keduanya DIHAPUS 2026-09-11 karena `x-html` menyuntikkan bagian yang
+    // berisi widget ber-x-data ASYNC (mis. "Perbandingan Antar Periode")
+    // TERBUKTI membuat state widget itu RANDOM RESET setiap kali properti
+    // reaktifnya berubah: `Alpine.initTree()` atas konten baru berjalan
+    // SINKRON di dalam effect x-html itu sendiri, sehingga setiap pembacaan
+    // properti reaktif SELAMA inisialisasi widget (mis. `init()`/`muat()`
+    // sebelum `await` pertama) salah tertaut sebagai dependensi effect
+    // x-html tsb — akibatnya widget itu (dan seluruh `.seksi-grid`) DIBANGUN
+    // ULANG DARI STRING STATIS ASLINYA setiap kali widget itu sendiri
+    // "berubah", menghapus interaksi pengguna (kelihatan seolah dropdown
+    // "tidak berpengaruh"). Merender langsung sebagai HTML biasa (bagian dari
+    // muatan HALAMAN AWAL, bukan disuntikkan lewat efek reaktif belakangan)
+    // menghindari seluruh kelas bug ini — lihat resources/views/dashboard-
+    // publik/index.blade.php untuk pemanggilan window.gambarSemuaChartDaduk()
+    // versi halaman itu.
 
     // Menggambar SELURUH chart di grid (Demografi/Sosial/Mobilitas/Dashboard
     // Publik) dari payload `charts`. Tiap kanvas hanya digambar kalau elemennya
@@ -392,7 +392,7 @@
                         }
 
                         const canvas = document.getElementById('chart-perbandingan');
-                        if (!canvas || !this.labels.length) return;
+                        if (!canvas) return;
 
                         // Hancurkan & buat ulang chart dari nol tiap render() —
                         // BUKAN cuma ganti chart.data lalu update(). Saat ganti
@@ -404,103 +404,119 @@
                         // update(). destroy()+new Chart() selalu mulai dari state
                         // bersih, menghindari kelas bug ini sepenuhnya.
                         //
-                        // Instance-nya disimpan sebagai properti PADA ELEMEN CANVAS
-                        // itu sendiri (`canvas._chartInstance`) — BUKAN di closure
-                        // JS biasa, dan BUKAN di properti objek reaktif Alpine.
-                        // Ditemukan 2026-08-25: closure biasa (`let chartInstance`
-                        // di luar `return {...}`) TERBUKTI tidak bisa diandalkan di
-                        // sini — nilainya "reset" ke null antar pemanggilan render()
-                        // meski secara sintaks JS seharusnya tetap (diverifikasi
-                        // lewat simulasi Alpine+Chart.js sungguhan, bukan asumsi).
-                        // Menaruhnya di elemen DOM (yang persisten selama canvas itu
-                        // tidak dibongkar) menghindari masalah itu sepenuhnya.
-                        if (canvas._chartInstance) {
-                            canvas._chartInstance.destroy();
-                            canvas._chartInstance = null;
-                        }
+                        // PENTING (2026-09-11): pakai REGISTRI ASLI Chart.js
+                        // (`Chart.getChart(canvas)`), BUKAN properti kustom
+                        // (`canvas._chartInstance`) seperti sebelumnya. Kalau
+                        // `new Chart(...)` gagal di tengah jalan (exception apa
+                        // pun), Chart.js SUDAH mendaftarkan kanvas itu ke
+                        // registrinya sendiri SEBELUM konstruktor selesai —
+                        // sedangkan properti kustom kita TIDAK PERNAH ke-set
+                        // (baris assignment tidak tercapai). Akibatnya kanvas
+                        // "nyangkut": Chart.js menolak semua percobaan
+                        // berikutnya ("Canvas is already in use ... must be
+                        // destroyed") padahal `canvas._chartInstance` kita
+                        // masih null — inilah sebab tersangka bug "ganti
+                        // indikator, chart-nya diam tidak berubah" (macet di
+                        // gambar TERAKHIR yang berhasil, lalu semua switch
+                        // berikutnya gagal senyap tanpa pernah pulih sampai
+                        // halaman dimuat ulang). `Chart.getChart()` SELALU
+                        // akurat karena itu sumber kebenaran Chart.js sendiri
+                        // — sama pola dengan `hancurkanJikaAda()` di atas.
+                        const lama = window.Chart.getChart(canvas);
+                        if (lama) lama.destroy();
 
-                        canvas._chartInstance = new Chart(canvas, {
-                            type: 'bar',
-                            data: {
-                                labels: this.labels.slice(),
-                                datasets: [{
-                                        label: this.periode1,
-                                        data: this.nilai1.slice(),
-                                        backgroundColor: '#93c5fd',
-                                        borderRadius: 4,
-                                        borderSkipped: false
-                                    },
-                                    {
-                                        label: this.periode2,
-                                        data: this.nilai2.slice(),
-                                        backgroundColor: '#1d4ed8',
-                                        borderRadius: 4,
-                                        borderSkipped: false
-                                    },
-                                ],
-                            },
-                            options: {
-                                responsive: true,
-                                maintainAspectRatio: false,
-                                indexAxis: 'y',
-                                layout: {
-                                    padding: {
-                                        right: 40
-                                    }
+                        if (!this.labels.length) return;
+
+                        try {
+                            new Chart(canvas, {
+                                type: 'bar',
+                                data: {
+                                    labels: this.labels.slice(),
+                                    datasets: [{
+                                            label: this.periode1,
+                                            data: this.nilai1.slice(),
+                                            backgroundColor: '#93c5fd',
+                                            borderRadius: 4,
+                                            borderSkipped: false
+                                        },
+                                        {
+                                            label: this.periode2,
+                                            data: this.nilai2.slice(),
+                                            backgroundColor: '#1d4ed8',
+                                            borderRadius: 4,
+                                            borderSkipped: false
+                                        },
+                                    ],
                                 },
-                                plugins: {
-                                    legend: {
-                                        position: 'bottom',
-                                        labels: {
-                                            boxWidth: 10,
-                                            font: {
-                                                size: 10
+                                options: {
+                                    responsive: true,
+                                    maintainAspectRatio: false,
+                                    indexAxis: 'y',
+                                    layout: {
+                                        padding: {
+                                            right: 40
+                                        }
+                                    },
+                                    plugins: {
+                                        legend: {
+                                            position: 'bottom',
+                                            labels: {
+                                                boxWidth: 10,
+                                                font: {
+                                                    size: 10
+                                                }
                                             }
-                                        }
-                                    },
-                                    tooltip: {
-                                        callbacks: {
-                                            label: (c) => `${c.dataset.label}: ${fmt(c.raw)} jiwa`
-                                        }
-                                    },
-                                    datalabels: {
-                                        display: true,
-                                        anchor: 'end',
-                                        align: 'end',
-                                        clamp: true,
-                                        color: '#374151',
-                                        font: {
-                                            size: 9,
-                                            weight: '600'
                                         },
-                                        formatter: (v) => fmt(v),
-                                    },
-                                },
-                                scales: {
-                                    x: {
-                                        grid: {
-                                            display: false
+                                        tooltip: {
+                                            callbacks: {
+                                                label: (c) => `${c.dataset.label}: ${fmt(c.raw)} jiwa`
+                                            }
                                         },
-                                        ticks: {
+                                        datalabels: {
+                                            display: true,
+                                            anchor: 'end',
+                                            align: 'end',
+                                            clamp: true,
+                                            color: '#374151',
                                             font: {
-                                                size: 10
+                                                size: 9,
+                                                weight: '600'
                                             },
-                                            callback: (v) => v >= 1000 ? `${v / 1000}k` : v
-                                        }
-                                    },
-                                    y: {
-                                        grid: {
-                                            display: false
+                                            formatter: (v) => fmt(v),
                                         },
-                                        ticks: {
-                                            font: {
-                                                size: 10
+                                    },
+                                    scales: {
+                                        x: {
+                                            grid: {
+                                                display: false
+                                            },
+                                            ticks: {
+                                                font: {
+                                                    size: 10
+                                                },
+                                                callback: (v) => v >= 1000 ? `${v / 1000}k` : v
                                             }
-                                        }
+                                        },
+                                        y: {
+                                            grid: {
+                                                display: false
+                                            },
+                                            ticks: {
+                                                font: {
+                                                    size: 10
+                                                }
+                                            }
+                                        },
                                     },
                                 },
-                            },
-                        });
+                            });
+                        } catch (e) {
+                            // Jangan biarkan exception di sini diam-diam
+                            // "membekukan" chart selamanya — tercatat di
+                            // console supaya kalau muncul lagi gejalanya
+                            // langsung terlihat, bukan cuma "tidak berubah".
+                            console.error('Gagal menggambar chart perbandingan', e);
+                        }
                     },
                 };
             }

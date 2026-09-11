@@ -130,11 +130,17 @@
 
                 {{-- ── Bagian yang dipindah Petugas ke halaman "dashboard" ──
                      (menu "Bagian Dashboard"). Se-Kota, periode terbaru; tanpa
-                     filter di sini. Kalau belum ada yang dipindah, tak tampil. --}}
+                     filter di sini. Kalau belum ada yang dipindah, tak tampil.
+                     Dirender LANGSUNG di server (BUKAN lewat x-html) — lihat
+                     catatan 2026-09-11 di dashboard/_skrip.blade.php: x-html
+                     yang menyuntikkan bagian ber-x-data ASYNC (mis. widget
+                     "Perbandingan Antar Periode") bikin state-nya ke-reset
+                     acak setiap kali properti reaktif APA PUN di bagian itu
+                     berubah — sebab initTree() bagian baru berjalan SINKRON di
+                     dalam effect x-html itu sendiri, jadi pembacaan properti
+                     reaktifnya salah tertaut ke effect x-html tsb. --}}
                 @if (str_contains($kontenGrid, 'seksi-item'))
-                    <div x-data="dashboardGridApp({ konten_html: @js($kontenGrid), charts: @js($gridCharts), rute: '' })">
-                        <div x-html="kontenHtml"></div>
-                    </div>
+                    <div>{!! $kontenGrid !!}</div>
                 @endif
 
             </div>
@@ -144,6 +150,10 @@
     <x-slot:scripts>
         @include('dashboard._skrip')
         <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                if (window.gambarSemuaChartDaduk) window.gambarSemuaChartDaduk(@js($gridCharts));
+            });
+
             function dashboardApp() {
                 const fmt = (n) => new Intl.NumberFormat('id-ID').format(n ?? 0);
 
