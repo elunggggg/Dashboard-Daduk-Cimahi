@@ -14,18 +14,10 @@
         </div>
     </div>
 
-    {{-- Filter tanpa reload (Phase 5). Konten = bagian-bagian yang halaman
-         DB-nya "sosial" (diatur Petugas lewat menu "Bagian Dashboard"),
-         dirender di dashboard/_grid, diganti lewat x-html; kanvas Chart.js
-         di-redraw oleh gambarSemuaChart() (dashboard/_skrip). --}}
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6"
-         x-data="dashboardGridApp({
-             konten_html: @js($kontenHtml),
-             charts: @js($charts),
-             rute: '{{ route('sosial.index') }}',
-         })"
-         @filter-berubah.window="muat($event.detail)"
-    >
+    {{-- Filter periode/wilayah = FORM GET biasa: "Terapkan" memuat ulang
+         halaman dengan query string. Konten grid dirender di server
+         (dashboard/_grid); chart digambar sekali saat halaman dimuat. --}}
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
 
         <x-filter-wilayah
             action="{{ route('sosial.index') }}"
@@ -37,19 +29,17 @@
             :waktuId="$waktuId"
         />
 
-        <div x-show="loading" class="space-y-6">
-            <x-skeleton-card :rows="4" />
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-                <x-skeleton-card :rows="3" /><x-skeleton-card :rows="3" />
-            </div>
-        </div>
-
-        <div x-show="!loading" x-cloak x-html="kontenHtml"></div>
+        <div>{!! $kontenHtml !!}</div>
 
     </div>
 
     <x-slot:scripts>
         @include('dashboard._skrip')
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                if (window.gambarSemuaChartDaduk) window.gambarSemuaChartDaduk(@js($charts));
+            });
+        </script>
     </x-slot:scripts>
 
 </x-layouts.public>

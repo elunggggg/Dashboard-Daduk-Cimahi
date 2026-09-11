@@ -5,44 +5,25 @@
     // digambar kalau elemennya ADA di DOM (bagian yang disembunyikan / dipindah
     // ke halaman lain tidak punya kanvas → dilewati). Dipakai untuk kunjungan
     // pertama (init) maupun tiap fetch filter (muat()).
+    // Shell Alpine tipis: dipakai zona grid Dashboard Publik (tanpa filter).
+    // Halaman Demografi/Sosial/Mobilitas kini merender kontennya di SERVER dan
+    // memuat ulang halaman penuh saat tombol "Terapkan" ditekan (bukan fetch
+    // AJAX lagi) — komponen ini tidak lagi mereka pakai.
     function dashboardGridApp(seed) {
         return {
-            loading: false,
             kontenHtml: seed.konten_html,
-            _rute: seed.rute,
 
             init() {
-                this.$nextTick(() => this.gambarSemuaChart(seed.charts));
+                this.$nextTick(() => window.gambarSemuaChartDaduk(seed.charts));
             },
+        };
+    }
 
-            async muat(filter) {
-                this.loading = true;
-
-                const params = new URLSearchParams();
-                if (filter.kecamatan) params.set('kecamatan', filter.kecamatan);
-                if (filter.wilayah_id) params.set('wilayah_id', filter.wilayah_id);
-                if (filter.waktu_id) params.set('waktu_id', filter.waktu_id);
-
-                const url = this._rute + (params.toString() ? '?' + params.toString() : '');
-                window.history.pushState({}, '', url);
-
-                try {
-                    const res = await fetch(url, {
-                        headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-                    });
-                    const json = await res.json();
-
-                    this.kontenHtml = json.konten_html;
-                    this.loading = false;
-                    await this.$nextTick();
-                    this.gambarSemuaChart(json.charts);
-                } catch (e) {
-                    console.error('Gagal memuat data dashboard', e);
-                    this.loading = false;
-                }
-            },
-
-            gambarSemuaChart(d) {
+    // Menggambar SELURUH chart di grid (Demografi/Sosial/Mobilitas/Dashboard
+    // Publik) dari payload `charts`. Tiap kanvas hanya digambar kalau elemennya
+    // ADA di DOM (bagian yang disembunyikan / dipindah ke halaman lain tidak
+    // punya kanvas → dilewati). Dipanggil sekali saat halaman selesai dimuat.
+    window.gambarSemuaChartDaduk = function (d) {
                 const fmt = window.formatAngka;
                 const W = window.DadukColors;
                 const K = window.DadukKategori;
@@ -296,9 +277,7 @@
                         },
                     });
                 }
-            },
-        };
-    }
+    };
 
     // ── Perbandingan Antar Periode (bagian grid, bisa dipindah) ──
             function perbandinganBox(cfg = {}) {

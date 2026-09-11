@@ -19,24 +19,12 @@
         </div>
     </div>
 
-    {{-- ── Phase 5: filter kecamatan/kelurahan tanpa reload ──
-         GeoJSON & choropleth dimuat SEKALI (tidak berubah oleh filter ini —
-         peta selalu periode terbaru), jadi fetch() hanya mengambil ulang panel
-         statistik (stats_html, dirender di server, lihat peta/_stats.blade.php)
-         lalu me-restyle layer peta yang sudah ada lewat window._petaRestyle. --}}
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6"
-         x-data="petaApp({
-             kecamatan: @js($kecamatan ?? ''),
-             kelurahan_id: @js($kelurahanId),
-             total_terpilih: @js($totalTerpilih),
-             jumlah_kelurahan: @js($wilayahStats->count()),
-             kelurahan_nama: @js($kelurahanTerpilih?->nama_kelurahan),
-             stats_html: @js((string) view('peta._stats', [
-                 'wilayahStats' => $wilayahStats, 'kecamatanStats' => $kecamatanStats,
-                 'kelurahanId' => $kelurahanId, 'kelurahanTerpilih' => $kelurahanTerpilih,
-             ])->render()),
-         })"
-    >
+    {{-- ── Filter kecamatan/kelurahan = FORM GET biasa ──
+         Menekan "Terapkan" memuat ulang halaman dengan query string. GeoJSON &
+         choropleth dibangun ulang saat halaman dimuat (membaca $kecamatan /
+         $kelurahanTerpilih di DOMContentLoaded). Panel statistik dirender di
+         server (peta/_stats.blade.php). --}}
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
 
         {{-- ── Filter wilayah ── --}}
         @php
@@ -47,20 +35,21 @@
             ])->values();
         @endphp
 
-        <div class="card p-4 mb-6"
+        <form method="GET" action="{{ route('peta.index') }}" class="card p-4 mb-6"
               x-data="{
+                  selectedKecamatan: @js($kecamatan ?? ''),
+                  selectedKelurahan: @js($kelurahanId ? (string) $kelurahanId : ''),
                   semua: {{ Illuminate\Support\Js::from($wilayahOpsi) }},
                   get daftarKelurahan() {
-                      return kecamatan
-                          ? this.semua.filter(w => w.kecamatan === kecamatan)
+                      return this.selectedKecamatan
+                          ? this.semua.filter(w => w.kecamatan === this.selectedKecamatan)
                           : this.semua;
                   },
                   onKecamatanChange() {
-                      // Kelurahan yang tidak lagi berada di kecamatan terpilih harus direset,
-                      // kalau tidak filter akan saling bertabrakan saat dikirim.
-                      const masihValid = this.daftarKelurahan.some(w => String(w.id) === kelurahan);
-                      if (! masihValid) kelurahan = '';
-                      muat();
+                      // Kelurahan yang tidak lagi berada di kecamatan terpilih direset.
+                      if (! this.daftarKelurahan.some(w => String(w.id) === this.selectedKelurahan)) {
+                          this.selectedKelurahan = '';
+                      }
                   },
               }">
 
@@ -68,17 +57,17 @@
                 <div>
                     <label for="f-kecamatan" class="form-label">Kecamatan</label>
                     <select name="kecamatan" id="f-kecamatan" class="form-select"
-                            x-model="kecamatan" @change="onKecamatanChange()">
+                            x-model="selectedKecamatan" @change="onKecamatanChange()">
                         <option value="">Semua Kecamatan</option>
                         @foreach($kecamatanList as $kec)
-                            <option value="{{ $kec }}">{{ $kec }}</option>
+                            <option value="{{ $kec }}" @selected(($kecamatan ?? '') === $kec)>{{ $kec }}</option>
                         @endforeach
                     </select>
                 </div>
 
                 <div>
                     <label for="f-kelurahan" class="form-label">Kelurahan</label>
-                    <select name="kelurahan" id="f-kelurahan" class="form-select" x-model="kelurahan" @change="muat()">
+                    <select name="kelurahan" id="f-kelurahan" class="form-select" x-model="selectedKelurahan">
                         <option value="">Semua Kelurahan</option>
                         <template x-for="w in daftarKelurahan" :key="w.id">
                             <option :value="w.id" x-text="w.kelurahan"></option>
@@ -87,28 +76,32 @@
                 </div>
 
                 <div class="flex gap-2">
-                    <button type="button" class="btn-primary" @click="muat()">
+                    <button type="submit" class="btn-primary">
                         <i class="bi bi-funnel"></i> Terapkan
                     </button>
-                    <button type="button" class="btn-secondary" x-show="kecamatan || kelurahan" x-cloak
-                            @click="kecamatan = ''; kelurahan = ''; muat()">
-                        Reset
-                    </button>
+                    @if($kecamatan || $kelurahanId)
+                        <a href="{{ route('peta.index') }}" class="btn-secondary">Reset</a>
+                    @endif
                 </div>
             </div>
 
-            {{-- Ringkasan filter aktif --}}
-            <div class="mt-3 pt-3 border-t border-gray-100 flex flex-wrap items-center gap-2 text-sm"
-                 x-show="kecamatan || kelurahan" x-cloak>
-                <span class="text-gray-500">Menampilkan:</span>
-                <span class="badge-blue" x-show="data.kelurahan_nama" x-text="'Kelurahan ' + data.kelurahan_nama"></span>
-                <span class="badge-gray" x-show="kecamatan" x-text="'Kec. ' + kecamatan"></span>
-                <span class="ml-auto text-gray-500">
-                    Total <strong class="text-gray-900" x-text="fmt(data.total_terpilih)"></strong> jiwa
-                    · <span x-text="data.jumlah_kelurahan"></span> kelurahan
-                </span>
-            </div>
-        </div>
+            {{-- Ringkasan filter aktif (dirender server) --}}
+            @if($kecamatan || $kelurahanId)
+                <div class="mt-3 pt-3 border-t border-gray-100 flex flex-wrap items-center gap-2 text-sm">
+                    <span class="text-gray-500">Menampilkan:</span>
+                    @if($kelurahanTerpilih)
+                        <span class="badge-blue">Kelurahan {{ $kelurahanTerpilih->nama_kelurahan }}</span>
+                    @endif
+                    @if($kecamatan)
+                        <span class="badge-gray">Kec. {{ $kecamatan }}</span>
+                    @endif
+                    <span class="ml-auto text-gray-500">
+                        Total <strong class="text-gray-900">{{ number_format($totalTerpilih, 0, ',', '.') }}</strong> jiwa
+                        · {{ $wilayahStats->count() }} kelurahan
+                    </span>
+                </div>
+            @endif
+        </form>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
 
@@ -117,20 +110,18 @@
                  supaya TIDAK menimpa navbar sticky (z-40) saat halaman digulir. --}}
             <div class="lg:col-span-2 card overflow-hidden relative isolate z-0">
                 <div id="leaflet-map" class="w-full h-[420px] sm:h-[520px]"></div>
-                <div x-show="loading" x-cloak
-                     class="absolute inset-0 bg-white/60 flex items-center justify-center z-[1000]">
-                    <i class="bi bi-arrow-repeat animate-spin text-2xl text-brand-700"></i>
-                </div>
             </div>
 
-            {{-- Stats panel (1/3) — HTML dirender server, diganti utuh saat filter berubah. --}}
+            {{-- Stats panel (1/3) — HTML dirender server. --}}
             <div class="space-y-4">
-                <template x-if="loading">
-                    <div class="space-y-4">
-                        <x-skeleton-card :chart="false" :rows="3" />
-                    </div>
-                </template>
-                <div x-show="!loading" x-html="statsHtml"></div>
+                <div>
+                    @include('peta._stats', [
+                        'wilayahStats'      => $wilayahStats,
+                        'kecamatanStats'    => $kecamatanStats,
+                        'kelurahanId'       => $kelurahanId,
+                        'kelurahanTerpilih' => $kelurahanTerpilih,
+                    ])
+                </div>
 
                 {{-- Disclaimer --}}
                 <div class="alert-info text-xs">
@@ -148,73 +139,9 @@
     <x-slot:scripts>
         <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
         <script>
-        // ── x-data utama: filter kecamatan/kelurahan tanpa reload (Phase 5) ──
-        // Peta Leaflet-nya sendiri (GeoJSON, choropleth) dibangun SEKALI di
-        // luar Alpine (lihat DOMContentLoaded di bawah) — komponen ini cuma
-        // mengganti panel statistik + memicu window._petaRestyle() untuk
-        // mewarnai-ulang layer yang sudah ada, bukan memuat ulang peta.
-        function petaApp(seed) {
-            return {
-                kecamatan: seed.kecamatan ?? '',
-                kelurahan: seed.kelurahan_id ? String(seed.kelurahan_id) : '',
-                data: seed,
-                statsHtml: null, // diisi setelah DOMContentLoaded (lihat init()) atau fetch()
-                loading: false,
-
-                init() {
-                    // Panel statistik kunjungan pertama sudah dirender di server
-                    // dan dikirim lewat seed (stats_html) — dipakai langsung,
-                    // TIDAK fetch ulang hanya untuk menampilkan yang sudah ada.
-                    this.statsHtml = seed.stats_html;
-                },
-
-                fmt(n) { return window.formatAngka(n); },
-
-                async muat() {
-                    this.loading = true;
-
-                    const params = new URLSearchParams();
-                    if (this.kecamatan) params.set('kecamatan', this.kecamatan);
-                    if (this.kelurahan) params.set('kelurahan', this.kelurahan);
-
-                    const url = '{{ route('peta.index') }}' + (params.toString() ? '?' + params.toString() : '');
-                    window.history.pushState({}, '', url);
-
-                    try {
-                        const res = await fetch(url, {
-                            headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-                        });
-                        const json = await res.json();
-
-                        this.data = json;
-                        this.statsHtml = json.stats_html;
-                        // Server bisa mengoreksi filter (mis. kelurahan tanpa
-                        // kecamatan otomatis menurunkan kecamatannya) — sinkronkan balik.
-                        this.kecamatan = json.kecamatan ?? '';
-                        this.kelurahan = json.kelurahan_id ? String(json.kelurahan_id) : '';
-
-                        window._petaRestyle && window._petaRestyle(this.kecamatan || null, json.kelurahan_id ?? null);
-                    } catch (e) {
-                        console.error('Gagal memuat data Peta', e);
-                    }
-
-                    this.loading = false;
-                },
-            };
-        }
-
-        // Dipanggil dari tombol di peta/_stats.blade.php ("Lihat seluruh Kec.
-        // ...", baris kelurahan) — keduanya sudah tidak berupa <a href> supaya
-        // tidak memicu reload; ini menembus ke instance Alpine terdekat.
-        window._petaGantiFilter = function (kecamatan, kelurahanId) {
-            const el = document.querySelector('[x-data^="petaApp"]');
-            if (!el || !window.Alpine) return;
-            const app = window.Alpine.$data(el);
-            app.kecamatan = kecamatan || '';
-            app.kelurahan = kelurahanId ? String(kelurahanId) : '';
-            app.muat();
-        };
-
+        // Peta Leaflet (GeoJSON, choropleth) dibangun sekali saat halaman dimuat.
+        // Filter kecamatan/kelurahan kini FORM GET biasa (muat ulang halaman) —
+        // fokus peta ditentukan $kecamatan / $kelurahanTerpilih dari server.
         document.addEventListener('DOMContentLoaded', function () {
             const map = L.map('leaflet-map').setView([-6.875, 107.541], 12);
 
@@ -252,44 +179,35 @@
                 return true;
             }
 
-            // Warna sorot untuk wilayah yang sedang difilter (kecamatan/kelurahan).
-            const SOROT_ISI    = '#14B8A6'; // teal-500
-            const SOROT_GARIS  = '#0F766E'; // teal-700
+            // Isi peta saat DISOROT (di-hover atau lolos filter) — warna
+            // choropleth-nya tetap, hanya lebih pekat, sama seperti efek hover.
+            const OPASITAS_SOROT = 0.9;
 
             // ── Lapisan Kelurahan (choropleth, tengah) ──────────────────────
             function gayaKelurahan(feature) {
                 const adaFilter = fokusKec || fokusWilayahId;
                 const aktif = dalamFilter(feature.properties);
-
-                // Wilayah yang cocok dengan filter → diberi WARNA SOROT (teal)
-                // + garis tebal supaya jelas menonjol dari choropleth merah.
-                if (adaFilter && aktif) {
-                    return {
-                        fillColor:   SOROT_ISI,
-                        weight:      4,
-                        opacity:     1,
-                        color:       SOROT_GARIS,
-                        fillOpacity: 0.6,
-                    };
-                }
+                const disorot = adaFilter && aktif;
 
                 return {
                     fillColor:   choroplethColor(pendudukPerWilayah[feature.properties.wilayah_id] ?? 0),
-                    weight:      adaFilter ? 1 : 2,
+                    // Wilayah yang difilter tampil PEKAT (seperti di-hover);
+                    // sisanya diredupkan supaya kontras.
+                    fillOpacity: disorot ? OPASITAS_SOROT : (adaFilter ? 0.25 : 0.75),
+                    weight:      disorot ? 3 : (adaFilter ? 1 : 2),
                     opacity:     1,
                     color:       '#1e3a5f',
-                    fillOpacity: adaFilter ? 0.28 : 0.75,
                 };
             }
 
             // ── Lapisan Kecamatan (outline paling tebal, atas) ──────────────
             function gayaKecamatan(feature) {
-                const fokus = fokusKec && feature.properties.kecamatan === fokusKec;
+                const aktif = ! fokusKec || feature.properties.kecamatan === fokusKec;
                 return {
                     fillOpacity: 0,
-                    weight: fokus ? 5 : 4,
-                    opacity: fokusKec ? (fokus ? 1 : 0.3) : 1,
-                    color: fokus ? SOROT_GARIS : '#0f172a',
+                    weight: 4,
+                    opacity: aktif ? 1 : 0.35,
+                    color: '#0f172a',
                 };
             }
 
@@ -317,10 +235,7 @@
                     <div style="display:flex;justify-content:space-between;margin-top:2px;color:#64748b;">
                         <span>${fmt(minPop)}</span><span>${fmt(maxPop)}</span>
                     </div>
-                    <div style="display:flex;align-items:center;gap:6px;margin-top:6px;">
-                        <span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:${SOROT_ISI};border:2px solid ${SOROT_GARIS};"></span>
-                        <span style="color:#64748b;">Wilayah difilter</span>
-                    </div>
+                    <div style="margin-top:6px;color:#64748b;">Wilayah yang difilter tampil lebih pekat.</div>
                 `;
                 return div;
             };
@@ -328,36 +243,6 @@
 
             let lapisanKelurahan = null;
             let lapisanKecamatan = null;
-
-            // Restyle + refit tanpa reload — dipanggil petaApp.muat() setelah
-            // fetch selesai. Tidak menyentuh jaringan sama sekali: GeoJSON dan
-            // choropleth-nya sudah ada di memori sejak Promise.all di bawah.
-            window._petaRestyle = function (kecBaru, wilayahIdBaru) {
-                fokusKec = kecBaru;
-                fokusWilayahId = wilayahIdBaru;
-
-                if (!lapisanKelurahan || !lapisanKecamatan) return;
-
-                let lapisanFokus = null;
-                lapisanKelurahan.eachLayer((lyr) => {
-                    lyr.setStyle(gayaKelurahan(lyr.feature));
-                    if (fokusWilayahId && lyr.feature.properties.wilayah_id === fokusWilayahId) {
-                        lapisanFokus = lyr;
-                    }
-                });
-                lapisanKecamatan.eachLayer((lyr) => lyr.setStyle(gayaKecamatan(lyr.feature)));
-
-                if (lapisanFokus) {
-                    map.fitBounds(lapisanFokus.getBounds(), { padding: [24, 24] });
-                    lapisanFokus.openPopup();
-                } else if (fokusKec) {
-                    const bataKec = Object.values(lapisanKecamatan._layers)
-                        .find((l) => l.feature.properties.kecamatan === fokusKec);
-                    if (bataKec) map.fitBounds(bataKec.getBounds(), { padding: [24, 24] });
-                } else if (lapisanKelurahan.getBounds().isValid()) {
-                    map.fitBounds(lapisanKelurahan.getBounds(), { padding: [16, 16] });
-                }
-            };
 
             Promise.all([
                 fetch('/geojson/batas-kecamatan-cimahi.geojson').then(r => r.json()),
@@ -393,7 +278,7 @@
                             `${jumlah_rw} RW`
                         );
 
-                        lyr.on('mouseover', () => lyr.setStyle({ fillOpacity: 0.9 }));
+                        lyr.on('mouseover', () => lyr.setStyle({ fillOpacity: OPASITAS_SOROT }));
                         lyr.on('mouseout',  () => lyr.setStyle(gayaKelurahan(feature)));
 
                         if (fokusWilayahId && wilayah_id === fokusWilayahId) {
